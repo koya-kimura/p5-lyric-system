@@ -9,7 +9,7 @@
       "id": "genEiKiwamiGo",
       "label": "源暎キワミゴ",
       "family": "'GenEiKiwamiGo'",
-      "source": "/font/GenEiKiwamiGo.ttf",
+      "source": "/font/book/GenEiKiwamiGo.ttf",
       "descriptors": {
         "style": "normal",
         "weight": "400"
@@ -19,7 +19,7 @@
       "id": "hinaMincho",
       "label": "ひな明朝",
       "family": "'Hina Mincho'",
-      "source": "/font/HinaMincho-Regular.ttf",
+      "source": "/font/book/HinaMincho-Regular.ttf",
       "descriptors": {
         "style": "normal",
         "weight": "400"
@@ -29,7 +29,7 @@
       "id": "kaiseiDecolBold",
       "label": "解星デコール Bold",
       "family": "'Kaisei Decol'",
-      "source": "/font/KaiseiDecol-Bold.ttf",
+      "source": "/font/book/KaiseiDecol-Bold.ttf",
       "descriptors": {
         "style": "normal",
         "weight": "700"
@@ -39,7 +39,7 @@
       "id": "kuramubon",
       "label": "クラーモン",
       "family": "'Kuramubon'",
-      "source": "/font/Kuramubon.otf",
+      "source": "/font/book/Kuramubon.otf",
       "descriptors": {
         "style": "normal",
         "weight": "400"
@@ -49,7 +49,7 @@
       "id": "keiFont",
       "label": "けいふぉんと",
       "family": "'KeiFont'",
-      "source": "/font/keifont.ttf",
+      "source": "/font/book/keifont.ttf",
       "descriptors": {
         "style": "normal",
         "weight": "400"
@@ -59,7 +59,7 @@
       "id": "marshmallowPopHeart",
       "label": "マシュマロポップハート",
       "family": "'Marshmallow Pop Heart'",
-      "source": "/font/marshmallowpopheart.otf",
+      "source": "/font/book/marshmallowpopheart.otf",
       "descriptors": {
         "style": "normal",
         "weight": "400"
