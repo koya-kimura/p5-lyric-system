@@ -9,7 +9,7 @@ import { ensureFontLoaded, getFontById, getP5FontById, type FontId } from "../co
 export class SampleScene implements Scene {
     private displayedMessage: string;
     private pendingMessage: { text: string; bpm: number; movementId: string; fontId: FontId } | null;
-    private latestMessage: string;
+    private latestMessageVersion: number;
 
     // movement tempo (beats per minute)
     private activeMovementBpm = 120;
@@ -23,7 +23,7 @@ export class SampleScene implements Scene {
     constructor(parameterStore: ParameterStore) {
         const initialState = parameterStore.getState();
         this.displayedMessage = initialState.message;
-        this.latestMessage = initialState.message;
+        this.latestMessageVersion = initialState.messageVersion;
         this.pendingMessage = null;
         this.activeMovementBpm = Math.max(1, initialState.tempoBpm);
         this.activeMovementId = initialState.movementId;
@@ -40,8 +40,10 @@ export class SampleScene implements Scene {
                 void ensureFontLoaded(getFontById(this.requestedFontId));
             }
 
-            if (this.latestMessage !== state.message) {
-                this.latestMessage = state.message;
+            const nextMessageVersion = state.messageVersion;
+
+            if (this.latestMessageVersion !== nextMessageVersion) {
+                this.latestMessageVersion = nextMessageVersion;
                 this.pendingMessage = {
                     text: state.message,
                     bpm: nextTempoBpm,

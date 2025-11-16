@@ -1,8 +1,12 @@
 import type { Movement } from "../interfaces/Movement";
-import { DownSlideMovement } from "./entries/DownSlideMovement";
+import { CenterScaleMovement } from "./entries/CenterScaleMovement";
+import { VerticalMovement } from "./entries/VerticalMovement";
+import { VerticalTextDisplay } from "./entries/VerticalTextDisplay";
 
 const movementRegistry: Movement[] = [
-  new DownSlideMovement(),
+  new VerticalTextDisplay(),
+  new VerticalMovement(),
+  new CenterScaleMovement(),
 ];
 
 const movementAliases: Record<string, Movement> = {

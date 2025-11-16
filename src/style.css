@@ -501,6 +501,16 @@ input {
   letter-spacing: 0.015em;
 }
 
+.control-tap-tempo {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.control-tap-tempo.is-tapped {
+  transform: scale(0.97);
+  box-shadow: 0 14px 26px rgba(56, 189, 248, 0.45);
+}
+
 button {
   padding: 11px 18px;
   border-radius: 999px;

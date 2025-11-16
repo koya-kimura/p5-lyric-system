@@ -37,6 +37,7 @@ export class ControlPanel {
   private readonly tempoSlider: HTMLInputElement;
   private readonly tempoValue: HTMLSpanElement;
   private readonly tempoBeatInfo: HTMLSpanElement;
+  private readonly tapTempoButton: HTMLButtonElement;
   private readonly fontSelect: HTMLSelectElement;
   private readonly fontPreview: HTMLElement;
   private readonly movementRadios: Map<string, HTMLInputElement>;
@@ -53,6 +54,8 @@ export class ControlPanel {
   private activeInteractions: number;
   private originalCursor: string;
   private originalUserSelect: string;
+  private tapTempoSamples: number[];
+  private tapFeedbackTimeoutId: number | null;
 
   constructor(options: ControlPanelOptions) {
     this.store = options.store;
@@ -70,6 +73,8 @@ export class ControlPanel {
     this.activeInteractions = 0;
     this.originalCursor = "";
     this.originalUserSelect = "";
+    this.tapTempoSamples = [];
+    this.tapFeedbackTimeoutId = null;
 
     this.layout = document.createElement("div");
     this.layout.className = "control-layout";
@@ -293,9 +298,14 @@ export class ControlPanel {
     const tempoBeatInfo = document.createElement("span");
     tempoBeatInfo.className = "control-params-range-bpm";
 
+    this.tapTempoButton = document.createElement("button");
+    this.tapTempoButton.type = "button";
+    this.tapTempoButton.className = "control-tap-tempo secondary";
+    this.tapTempoButton.textContent = "タップテンポ";
+
     tempoLabel.append(tempoCaption, tempoControls);
     this.tempoBeatInfo = tempoBeatInfo;
-    tempoSection.append(tempoTitle, tempoLabel, tempoBeatInfo);
+    tempoSection.append(tempoTitle, tempoLabel, this.tapTempoButton, tempoBeatInfo);
 
     const tempoPanel = this.createPanel("tempo", tempoSection);
 
@@ -373,6 +383,7 @@ export class ControlPanel {
       const bpm = Number.parseInt(this.tempoSlider.value, 10);
       if (!Number.isNaN(bpm)) {
         this.store.setTempoBpm(bpm);
+        this.tapTempoSamples = [];
       }
     });
 
@@ -382,6 +393,10 @@ export class ControlPanel {
       this.applyFontPreview(fontId);
       void ensureFontLoaded(font);
       this.store.setFont(fontId);
+    });
+
+    this.tapTempoButton.addEventListener("click", () => {
+      this.handleTapTempo();
     });
 
     this.lyricsList.addEventListener("click", (event) => {
@@ -403,6 +418,8 @@ export class ControlPanel {
     this.handleKeyDown = this.handleKeyDown.bind(this);
 
     window.addEventListener("keydown", this.handleKeyDown);
+
+    this.ensureInitialSongSelection();
 
     this.unsubscribe = this.store.subscribe((state) => {
       this.state = state;
@@ -623,6 +640,25 @@ export class ControlPanel {
     });
   }
 
+  private ensureInitialSongSelection(): void {
+    if (this.lyrics.songs.length === 0) {
+      return;
+    }
+
+    const desiredSongId = this.state.selectedSongId ?? this.lyrics.songs[0]?.id ?? null;
+    if (!desiredSongId) {
+      return;
+    }
+
+    if (this.state.selectedSongId !== desiredSongId) {
+      this.store.selectSong(desiredSongId);
+      this.state = this.store.getState();
+    }
+
+    this.songSelect.value = desiredSongId;
+    this.renderLyricsList(desiredSongId);
+  }
+
   private renderLyricsList(songId: string | null): void {
     if (this.renderedSongId === songId) {
       this.highlightActiveLyric();
@@ -761,6 +797,9 @@ export class ControlPanel {
         this.tempoSlider.value = String(state.tempoBpm);
       }
       this.updateTempoLabel(state.tempoBpm);
+      if (this.tapTempoSamples.length > 0 && sliderValue !== state.tempoBpm) {
+        this.tapTempoSamples = [];
+      }
     }
 
     if (this.fontSelect.value !== state.fontId) {
@@ -798,6 +837,66 @@ export class ControlPanel {
     this.tempoValue.textContent = `${sanitizedBpm.toFixed(0)} BPM`;
     const msPerBeat = 60000 / sanitizedBpm;
     this.tempoBeatInfo.textContent = `1拍 ≈ ${(msPerBeat / 1000).toFixed(2)}s`;
+  }
+
+  private handleTapTempo(): void {
+    const now = performance.now();
+    const samples = this.tapTempoSamples;
+
+    if (samples.length > 0) {
+      const delta = now - samples[samples.length - 1];
+      if (delta > 2000) {
+        samples.length = 0;
+      }
+    }
+
+    samples.push(now);
+
+    if (samples.length > 8) {
+      samples.splice(0, samples.length - 8);
+    }
+
+    this.flashTapTempoButton();
+
+    if (samples.length < 2) {
+      return;
+    }
+
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const span = last - first;
+    if (span <= 0) {
+      return;
+    }
+
+    const averageInterval = span / (samples.length - 1);
+    if (!Number.isFinite(averageInterval) || averageInterval <= 0) {
+      return;
+    }
+
+    const computedBpm = Math.round(60000 / averageInterval);
+    if (!Number.isFinite(computedBpm) || computedBpm <= 0) {
+      return;
+    }
+
+    const sliderMin = Number.parseInt(this.tempoSlider.min, 10) || 1;
+    const sliderMax = Number.parseInt(this.tempoSlider.max, 10) || 400;
+    const clamped = Math.min(sliderMax, Math.max(sliderMin, computedBpm));
+
+    this.tempoSlider.value = String(clamped);
+    this.updateTempoLabel(clamped);
+    this.store.setTempoBpm(clamped);
+  }
+
+  private flashTapTempoButton(): void {
+    this.tapTempoButton.classList.add("is-tapped");
+    if (this.tapFeedbackTimeoutId !== null) {
+      window.clearTimeout(this.tapFeedbackTimeoutId);
+    }
+    this.tapFeedbackTimeoutId = window.setTimeout(() => {
+      this.tapTempoButton.classList.remove("is-tapped");
+      this.tapFeedbackTimeoutId = null;
+    }, 160);
   }
 
   private applyFontPreview(fontId: FontId): void {

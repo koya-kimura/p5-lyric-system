@@ -11,6 +11,7 @@ const DEFAULT_FONT_ID: FontId = getDefaultFontId();
 
 type ParameterStateBase = {
   message: string;
+  messageVersion: number;
   manualMessage: string;
   selectedSongId: string | null;
   activeLyricIndex: number;
@@ -22,9 +23,7 @@ export type ParameterState = ParameterStateBase & {
   movementId: MovementId;
 };
 
-type SerializableState = ParameterStateBase & {
-  movementId?: MovementId;
-};
+type SerializableState = Partial<ParameterState>;
 
 type Listener = (state: ParameterState) => void;
 
@@ -42,6 +41,7 @@ export class ParameterStore {
   constructor(initial?: Partial<ParameterState>) {
     this.state = {
       message: initial?.message ?? DEFAULT_MESSAGE,
+      messageVersion: initial?.messageVersion ?? 0,
       manualMessage: initial?.manualMessage ?? (initial?.message ?? DEFAULT_MESSAGE),
       selectedSongId: initial?.selectedSongId ?? null,
       activeLyricIndex: initial?.activeLyricIndex ?? -1,
@@ -98,16 +98,24 @@ export class ParameterStore {
   }
 
   update(partial: Partial<ParameterState>): void {
-    this.applyState({
+    const nextState: ParameterState = {
       ...this.state,
       ...partial,
-    }, { broadcast: true });
+    };
+
+    if (partial.message !== undefined && partial.messageVersion === undefined) {
+      nextState.messageVersion = this.state.messageVersion + 1;
+    }
+
+    this.applyState(nextState, { broadcast: true });
   }
 
   setManualMessage(message: string): void {
+    const nextVersion = this.state.messageVersion + 1;
     this.applyState({
       ...this.state,
       message,
+      messageVersion: nextVersion,
       manualMessage: message,
       activeLyricIndex: -1,
     }, { broadcast: true });
@@ -122,11 +130,13 @@ export class ParameterStore {
   }
 
   showLyric(payload: { songId: string; index: number; text: string }): void {
+    const nextVersion = this.state.messageVersion + 1;
     this.applyState({
       ...this.state,
       selectedSongId: payload.songId,
       activeLyricIndex: payload.index,
       message: payload.text,
+      messageVersion: nextVersion,
     }, { broadcast: true });
   }
 
@@ -181,6 +191,7 @@ export class ParameterStore {
 
     return {
       message: state.message ?? DEFAULT_MESSAGE,
+      messageVersion: this.sanitizeVersion(state.messageVersion),
       manualMessage: state.manualMessage ?? state.message ?? DEFAULT_MESSAGE,
       selectedSongId: state.selectedSongId ?? null,
       activeLyricIndex: state.activeLyricIndex ?? -1,
@@ -193,6 +204,14 @@ export class ParameterStore {
   private sanitizeTempo(candidate: number | undefined): number {
     const tempo = Number.isFinite(candidate) ? Number(candidate) : DEFAULT_TEMPO_BPM;
     return Math.max(1, tempo);
+  }
+
+  private sanitizeVersion(candidate: number | undefined): number {
+    if (!Number.isFinite(candidate)) {
+      return 0;
+    }
+    const value = Math.floor(Number(candidate));
+    return value < 0 ? 0 : value;
   }
 
   private resolveFont(fontId: FontId | undefined): FontDefinition {
