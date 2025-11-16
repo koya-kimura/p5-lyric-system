@@ -33,9 +33,9 @@ export class ControlPanel {
   private readonly lyricsList: HTMLElement;
   private readonly manualInput: HTMLTextAreaElement;
   private readonly manualButton: HTMLButtonElement;
-  private readonly fadeSlider: HTMLInputElement;
-  private readonly fadeValue: HTMLSpanElement;
-  private readonly fadeBpm: HTMLSpanElement;
+  private readonly tempoSlider: HTMLInputElement;
+  private readonly tempoValue: HTMLSpanElement;
+  private readonly tempoBeatInfo: HTMLSpanElement;
   private readonly movementRadios: Map<string, HTMLInputElement>;
   private readonly unsubscribe: () => void;
   private readonly panelStates: WeakMap<HTMLElement, PanelMetrics>;
@@ -260,43 +260,43 @@ export class ControlPanel {
 
     const movementPanel = this.createPanel("movement", movementSection);
 
-    const fadeSection = document.createElement("section");
-    fadeSection.className = "control-params control-params--compact";
+    const tempoSection = document.createElement("section");
+    tempoSection.className = "control-params control-params--compact";
 
-    const fadeTitle = document.createElement("h2");
-    fadeTitle.textContent = "フェード設定";
+    const tempoTitle = document.createElement("h2");
+    tempoTitle.textContent = "テンポ設定";
 
-    const fadeLabel = document.createElement("label");
-    fadeLabel.className = "control-params-range";
+    const tempoLabel = document.createElement("label");
+    tempoLabel.className = "control-params-range";
 
-    const fadeCaption = document.createElement("span");
-    fadeCaption.textContent = "動作時間";
+    const tempoCaption = document.createElement("span");
+    tempoCaption.textContent = "BPM";
 
-    const fadeControls = document.createElement("div");
-    fadeControls.className = "control-params-range-controls";
+    const tempoControls = document.createElement("div");
+    tempoControls.className = "control-params-range-controls";
 
-    this.fadeSlider = document.createElement("input");
-    this.fadeSlider.type = "range";
-    this.fadeSlider.min = "0";
-    this.fadeSlider.max = "5000";
-    this.fadeSlider.step = "100";
-    this.fadeSlider.value = String(this.state.fadeDurationMs);
+    this.tempoSlider = document.createElement("input");
+    this.tempoSlider.type = "range";
+    this.tempoSlider.min = "40";
+    this.tempoSlider.max = "240";
+    this.tempoSlider.step = "1";
+    this.tempoSlider.value = String(this.state.tempoBpm);
 
-    this.fadeValue = document.createElement("span");
-    this.fadeValue.className = "control-params-range-value";
+    this.tempoValue = document.createElement("span");
+    this.tempoValue.className = "control-params-range-value";
 
-    fadeControls.append(this.fadeSlider, this.fadeValue);
+    tempoControls.append(this.tempoSlider, this.tempoValue);
 
-    const fadeBpm = document.createElement("span");
-    fadeBpm.className = "control-params-range-bpm";
+    const tempoBeatInfo = document.createElement("span");
+    tempoBeatInfo.className = "control-params-range-bpm";
 
-    fadeLabel.append(fadeCaption, fadeControls);
-    this.fadeBpm = fadeBpm;
-    fadeSection.append(fadeTitle, fadeLabel, fadeBpm);
+    tempoLabel.append(tempoCaption, tempoControls);
+    this.tempoBeatInfo = tempoBeatInfo;
+    tempoSection.append(tempoTitle, tempoLabel, tempoBeatInfo);
 
-    const fadePanel = this.createPanel("fade", fadeSection);
+    const tempoPanel = this.createPanel("tempo", tempoSection);
 
-    this.updateFadeLabel(this.state.fadeDurationMs);
+    this.updateTempoLabel(this.state.tempoBpm);
 
     const leftColumn = document.createElement("div");
     leftColumn.className = "control-column control-column--left";
@@ -304,7 +304,7 @@ export class ControlPanel {
 
     const centerColumn = document.createElement("div");
     centerColumn.className = "control-column control-column--center";
-    centerColumn.append(fadePanel, movementPanel);
+    centerColumn.append(tempoPanel, movementPanel);
 
     const rightColumn = document.createElement("div");
     rightColumn.className = "control-column control-column--right";
@@ -324,17 +324,17 @@ export class ControlPanel {
       }
     });
 
-    this.fadeSlider.addEventListener("input", () => {
-      const duration = Number.parseInt(this.fadeSlider.value, 10);
-      if (!Number.isNaN(duration)) {
-        this.updateFadeLabel(duration);
+    this.tempoSlider.addEventListener("input", () => {
+      const bpm = Number.parseInt(this.tempoSlider.value, 10);
+      if (!Number.isNaN(bpm)) {
+        this.updateTempoLabel(bpm);
       }
     });
 
-    this.fadeSlider.addEventListener("change", () => {
-      const duration = Number.parseInt(this.fadeSlider.value, 10);
-      if (!Number.isNaN(duration)) {
-        this.store.setFadeDuration(duration);
+    this.tempoSlider.addEventListener("change", () => {
+      const bpm = Number.parseInt(this.tempoSlider.value, 10);
+      if (!Number.isNaN(bpm)) {
+        this.store.setTempoBpm(bpm);
       }
     });
 
@@ -709,12 +709,12 @@ export class ControlPanel {
       }
     }
 
-    if (document.activeElement !== this.fadeSlider) {
-      const sliderValue = Number.parseInt(this.fadeSlider.value, 10);
-      if (sliderValue !== state.fadeDurationMs) {
-        this.fadeSlider.value = String(state.fadeDurationMs);
+    if (document.activeElement !== this.tempoSlider) {
+      const sliderValue = Number.parseInt(this.tempoSlider.value, 10);
+      if (sliderValue !== state.tempoBpm) {
+        this.tempoSlider.value = String(state.tempoBpm);
       }
-      this.updateFadeLabel(state.fadeDurationMs);
+      this.updateTempoLabel(state.tempoBpm);
     }
 
     this.syncMovementSelection(state.movementId);
@@ -741,9 +741,11 @@ export class ControlPanel {
     }
   }
 
-  private updateFadeLabel(durationMs: number): void {
-    this.fadeValue.textContent = `${(durationMs / 1000).toFixed(1)}s`;
-    this.fadeBpm.textContent = this.formatBpm(durationMs);
+  private updateTempoLabel(bpm: number): void {
+    const sanitizedBpm = Number.isFinite(bpm) ? Math.max(1, bpm) : 120;
+    this.tempoValue.textContent = `${sanitizedBpm.toFixed(0)} BPM`;
+    const msPerBeat = 60000 / sanitizedBpm;
+    this.tempoBeatInfo.textContent = `1拍 ≈ ${(msPerBeat / 1000).toFixed(2)}s`;
   }
 
   private syncMovementSelection(movementId: MovementId): void {
@@ -752,14 +754,5 @@ export class ControlPanel {
       input.checked = checked;
       input.parentElement?.classList.toggle("is-active", checked);
     });
-  }
-
-  private formatBpm(durationMs: number): string {
-    if (durationMs <= 0) {
-      return "参考BPM --";
-    }
-    const beatsPerCycle = 2; // 1サイクルを2拍換算してBPMを見積もる
-    const bpm = (60_000 * beatsPerCycle) / durationMs;
-    return `参考BPM ${bpm.toFixed(1)}`;
   }
 }

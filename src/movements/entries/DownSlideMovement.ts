@@ -5,28 +5,19 @@ export class DownSlideMovement implements Movement {
   readonly id = "downSlide";
   readonly label = "下スライド";
 
-  draw({ p, tex, message, progress }: MovementContext): void {
+  draw({ p, tex, message, beatsElapsed }: MovementContext): void {
     const safeMessage = message || "";
-    const eased = Easing.easeOutCubic(Math.min(1, Math.max(0, progress)));
-    const fade = Easing.easeOutSine(Math.min(1, Math.max(0, progress)));
-
-    const maxSize = Math.min(tex.width, tex.height);
-    const marginY = tex.height * 0.05;
-    const boxWidth = tex.width * 0.7;
-    const boxHeight = tex.height * 0.7;
-    const finalTop = marginY + (tex.height - marginY * 2 - boxHeight) / 2;
-    const startOffset = tex.height * 0.5;
-    const currentTop = finalTop + (1 - eased) * startOffset;
-    const currentLeft = tex.width / 2 - boxWidth / 2;
+    const beatPhase = Math.max(0, beatsElapsed);
+    const clamped = Math.min(1, beatPhase);
+    const scaled = Easing.easeInQuad(clamped) + (Math.max(1, beatPhase) - 1);
+    const maxSize = tex.width / (message.length * 2);
 
     tex.push();
     tex.noStroke();
-    tex.fill(255, 255, 255, Math.floor(255 * fade));
-    tex.textAlign(p.LEFT, p.TOP);
-    tex.textSize(maxSize * 0.08);
-    tex.textLeading(maxSize * 0.09);
-    tex.textWrap(p.WORD);
-    tex.text(safeMessage, currentLeft, currentTop, boxWidth, boxHeight);
+    tex.fill(255, Math.floor(255 * clamped));
+    tex.textAlign(p.CENTER, p.CENTER);
+    tex.textSize(maxSize + scaled * maxSize * 0.1);
+    tex.text(safeMessage, tex.width / 2, tex.height / 2);
     tex.pop();
   }
 }

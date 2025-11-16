@@ -4,13 +4,14 @@ export type { MovementId } from "../interfaces/Movement";
 
 const DEFAULT_MESSAGE = "";
 const DEFAULT_MOVEMENT_ID: MovementId = movements[0]?.id ?? "fade";
+const DEFAULT_TEMPO_BPM = 120;
 
 type ParameterStateBase = {
   message: string;
   manualMessage: string;
   selectedSongId: string | null;
   activeLyricIndex: number;
-  fadeDurationMs: number;
+  tempoBpm: number;
 };
 
 export type ParameterState = ParameterStateBase & {
@@ -40,7 +41,7 @@ export class ParameterStore {
       manualMessage: initial?.manualMessage ?? (initial?.message ?? DEFAULT_MESSAGE),
       selectedSongId: initial?.selectedSongId ?? null,
       activeLyricIndex: initial?.activeLyricIndex ?? -1,
-      fadeDurationMs: initial?.fadeDurationMs ?? 1000,
+      tempoBpm: initial?.tempoBpm ?? DEFAULT_TEMPO_BPM,
       movementId: initial?.movementId ?? DEFAULT_MOVEMENT_ID,
     };
 
@@ -124,10 +125,10 @@ export class ParameterStore {
     }, { broadcast: true });
   }
 
-  setFadeDuration(durationMs: number): void {
+  setTempoBpm(bpm: number): void {
     this.applyState({
       ...this.state,
-      fadeDurationMs: Math.max(0, durationMs),
+      tempoBpm: Number.isFinite(bpm) ? Math.max(1, bpm) : this.state.tempoBpm,
     }, { broadcast: true });
   }
 
@@ -170,9 +171,14 @@ export class ParameterStore {
       manualMessage: state.manualMessage ?? DEFAULT_MESSAGE,
       selectedSongId: state.selectedSongId,
       activeLyricIndex: state.activeLyricIndex,
-      fadeDurationMs: state.fadeDurationMs,
+      tempoBpm: this.sanitizeTempo(state.tempoBpm),
       movementId: resolvedMovement.id,
     };
+  }
+
+  private sanitizeTempo(candidate: number | undefined): number {
+    const tempo = Number.isFinite(candidate) ? Number(candidate) : DEFAULT_TEMPO_BPM;
+    return Math.max(1, tempo);
   }
 
   private emit(): void {

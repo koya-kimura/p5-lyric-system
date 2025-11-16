@@ -4,7 +4,8 @@ export type MovementContext = {
   tex: p5.Graphics;
   message: string;
   elapsedMs: number;
-  durationMs: number;
+  bpm: number;
+  beatsElapsed: number;
 };
 
 export type Movement = {
@@ -19,10 +20,10 @@ export const movements: Movement[] = [
     id: "fade",
     label: "中央フェードイン",
     description: "中央に淡く広がりながら文字が浮かぶ",
-    draw: ({ p, tex, message, elapsedMs, durationMs }) => {
+    draw: ({ p, tex, message, beatsElapsed }) => {
       const maxSize = Math.min(tex.width, tex.height);
-      const progress = durationMs > 0 ? Math.min(1, Math.max(0, elapsedMs / durationMs)) : 1;
-      const textAlpha = Math.floor(255 * progress);
+      const clamped = Math.min(1, Math.max(0, beatsElapsed));
+      const textAlpha = Math.floor(255 * clamped);
 
       tex.noStroke();
       tex.fill(255, 255, 255, textAlpha);
@@ -37,16 +38,16 @@ export const movements: Movement[] = [
     id: "rightFade",
     label: "右からフェードイン",
     description: "右端から滑らかにスライドしながら表示",
-    draw: ({ p, tex, message, elapsedMs, durationMs }) => {
+    draw: ({ p, tex, message, beatsElapsed }) => {
       const maxSize = Math.min(tex.width, tex.height);
-      const progress = durationMs > 0 ? Math.min(1, Math.max(0, elapsedMs / durationMs)) : 1;
-      const eased = progress <= 0 ? 0 : Math.pow(progress, 0.85);
+      const clamped = Math.min(1, Math.max(0, beatsElapsed));
+      const eased = clamped <= 0 ? 0 : Math.pow(clamped, 0.85);
 
       const startX = tex.width + maxSize * 0.35;
       const targetX = tex.width / 2;
       const currentX = startX + (targetX - startX) * eased;
 
-      const textAlpha = Math.floor(255 * progress);
+      const textAlpha = Math.floor(255 * clamped);
 
       const textOffset = tex.width * 0.12 * (1 - eased);
 

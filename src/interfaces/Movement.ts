@@ -7,8 +7,8 @@ export type MovementContext = {
   tex: p5.Graphics;
   message: string;
   elapsedMs: number;
-  durationMs: number;
-  progress: number;
+  bpm: number;
+  beatsElapsed: number;
 };
 
 export interface Movement {

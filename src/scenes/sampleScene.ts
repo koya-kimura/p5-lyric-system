@@ -7,11 +7,11 @@ import { getMovementById } from "../movements";
 // SampleScene はテンプレート用の最小シーン実装を提供する。
 export class SampleScene implements Scene {
     private displayedMessage: string;
-    private pendingMessage: { text: string; duration: number; movementId: string } | null;
+    private pendingMessage: { text: string; bpm: number; movementId: string } | null;
     private latestMessage: string;
-    
-    // movement animation timing (ms)
-    private activeMovementDuration = 1000;
+
+    // movement tempo (beats per minute)
+    private activeMovementBpm = 120;
     private activeMovementId = "fade";
 
     // transition state for swap between messages
@@ -19,7 +19,7 @@ export class SampleScene implements Scene {
     private transitionStart = Number.NEGATIVE_INFINITY;
     private readonly transitionOutMs = 200; // 0.2s fade-out
     private readonly transitionInMs = 200; // 0.2s fade-in
-    // when the current movement animation started (used to compute movement progress)
+    // when the current movement animation started (used to compute movement beats)
     private movementStart = Number.NEGATIVE_INFINITY;
 
     constructor(parameterStore: ParameterStore) {
@@ -27,26 +27,26 @@ export class SampleScene implements Scene {
         this.displayedMessage = initialState.message;
         this.latestMessage = initialState.message;
         this.pendingMessage = null;
-        this.activeMovementDuration = Math.max(0, initialState.fadeDurationMs);
+        this.activeMovementBpm = Math.max(1, initialState.tempoBpm);
         this.activeMovementId = initialState.movementId;
 
         parameterStore.subscribe((state) => {
-            const nextFadeDuration = Math.max(0, state.fadeDurationMs);
+            const nextTempoBpm = Math.max(1, state.tempoBpm);
 
             if (this.latestMessage !== state.message) {
                 this.latestMessage = state.message;
                 this.pendingMessage = {
                     text: state.message,
-                    duration: nextFadeDuration,
+                    bpm: nextTempoBpm,
                     movementId: state.movementId,
                 };
                 return;
             }
 
-            if (this.activeMovementDuration !== nextFadeDuration) {
+            if (this.activeMovementBpm !== nextTempoBpm) {
                 this.pendingMessage = {
                     text: this.displayedMessage,
-                    duration: nextFadeDuration,
+                    bpm: nextTempoBpm,
                     movementId: this.activeMovementId,
                 };
             }
@@ -70,7 +70,7 @@ export class SampleScene implements Scene {
                 // swap messages: previous fully faded out
                 this.displayedMessage = this.pendingMessage ? this.pendingMessage.text : this.displayedMessage;
                 if (this.pendingMessage) {
-                    this.activeMovementDuration = this.pendingMessage.duration;
+                    this.activeMovementBpm = this.pendingMessage.bpm;
                     this.activeMovementId = this.pendingMessage.movementId;
                 }
                 this.pendingMessage = null;
@@ -92,7 +92,7 @@ export class SampleScene implements Scene {
             return;
         }
 
-        // idle: ensure movementStart is set so movement progress can run
+        // idle: ensure movementStart is set so beat calculations can run
         if (this.transition === "idle" && this.movementStart === Number.NEGATIVE_INFINITY) {
             this.movementStart = now;
         }
@@ -116,11 +116,11 @@ export class SampleScene implements Scene {
             baseAlpha = 1;
         }
 
-        // movement progress is based on movementStart and activeMovementDuration
+        // movement beats are based on movementStart and the active BPM
         const movementElapsed = this.movementStart === Number.NEGATIVE_INFINITY ? 0 : now - this.movementStart;
-        const progress = this.activeMovementDuration > 0
-            ? Math.min(1, Math.max(0, movementElapsed / this.activeMovementDuration))
-            : 1;
+        const beatsElapsed = this.activeMovementBpm > 0
+            ? movementElapsed / (60000 / this.activeMovementBpm)
+            : 0;
 
         const movementToUse = movement.id === this.activeMovementId
             ? movement
@@ -146,8 +146,8 @@ export class SampleScene implements Scene {
                 tex,
                 message: this.displayedMessage,
                 elapsedMs: movementElapsed,
-                durationMs: this.activeMovementDuration,
-                progress,
+                bpm: this.activeMovementBpm,
+                beatsElapsed,
             });
         } catch (error) {
             console.warn("Movement draw failed", error);
@@ -158,8 +158,8 @@ export class SampleScene implements Scene {
                 tex,
                 message: this.displayedMessage,
                 elapsedMs: movementElapsed,
-                durationMs: this.activeMovementDuration,
-                progress,
+                bpm: this.activeMovementBpm,
+                beatsElapsed,
             });
         } finally {
             restoreAlpha();
