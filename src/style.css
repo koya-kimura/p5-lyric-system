@@ -327,6 +327,42 @@ input {
   resize: vertical;
 }
 
+.control-fonts {
+  gap: 14px;
+}
+
+.control-fonts-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: rgba(226, 232, 240, 0.86);
+}
+
+.control-fonts-select {
+  flex: 1 1 auto;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(30, 41, 59, 0.65);
+  color: inherit;
+  font-size: 14px;
+}
+
+.control-fonts-preview {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 68px;
+}
+
 .control-info {
   gap: 18px;
 }

@@ -1,0 +1,69 @@
+{
+  "fonts": [
+    {
+      "id": "systemSans",
+      "label": "システム サンセリフ",
+      "family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    },
+    {
+      "id": "genEiKiwamiGo",
+      "label": "源暎キワミゴ",
+      "family": "'GenEiKiwamiGo'",
+      "source": "/font/GenEiKiwamiGo.ttf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "400"
+      }
+    },
+    {
+      "id": "hinaMincho",
+      "label": "ひな明朝",
+      "family": "'Hina Mincho'",
+      "source": "/font/HinaMincho-Regular.ttf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "400"
+      }
+    },
+    {
+      "id": "kaiseiDecolBold",
+      "label": "解星デコール Bold",
+      "family": "'Kaisei Decol'",
+      "source": "/font/KaiseiDecol-Bold.ttf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "700"
+      }
+    },
+    {
+      "id": "kuramubon",
+      "label": "クラーモン",
+      "family": "'Kuramubon'",
+      "source": "/font/Kuramubon.otf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "400"
+      }
+    },
+    {
+      "id": "keiFont",
+      "label": "けいふぉんと",
+      "family": "'KeiFont'",
+      "source": "/font/keifont.ttf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "400"
+      }
+    },
+    {
+      "id": "marshmallowPopHeart",
+      "label": "マシュマロポップハート",
+      "family": "'Marshmallow Pop Heart'",
+      "source": "/font/marshmallowpopheart.otf",
+      "descriptors": {
+        "style": "normal",
+        "weight": "400"
+      }
+    }
+  ]
+}

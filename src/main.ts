@@ -5,6 +5,7 @@ import "./style.css";
 import { TexManager } from "./core/texManager";
 import { EffectManager } from "./core/effectManager";
 import { bootstrapClient } from "./app/bootstrapClient";
+import { preloadFontsWithP5 } from "./core/fontRegistry";
 
 const start = async () => {
   const { role, layout, store, telemetry } = await bootstrapClient();
@@ -21,6 +22,8 @@ const start = async () => {
     p.setup = async () => {
       const { width, height } = layout.getCanvasSize();
       p.createCanvas(width, height, p.WEBGL);
+
+      await preloadFontsWithP5(p);
 
       texManager.init(p);
 

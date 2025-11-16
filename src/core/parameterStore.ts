@@ -1,10 +1,13 @@
 import { movements, getMovementById } from "../movements";
 import type { MovementId } from "../interfaces/Movement";
+import { getFontById, getDefaultFontId, type FontDefinition, type FontId } from "./fontRegistry";
 export type { MovementId } from "../interfaces/Movement";
+export type { FontId } from "./fontRegistry";
 
 const DEFAULT_MESSAGE = "";
 const DEFAULT_MOVEMENT_ID: MovementId = movements[0]?.id ?? "fade";
 const DEFAULT_TEMPO_BPM = 120;
+const DEFAULT_FONT_ID: FontId = getDefaultFontId();
 
 type ParameterStateBase = {
   message: string;
@@ -12,6 +15,7 @@ type ParameterStateBase = {
   selectedSongId: string | null;
   activeLyricIndex: number;
   tempoBpm: number;
+  fontId: FontId;
 };
 
 export type ParameterState = ParameterStateBase & {
@@ -43,6 +47,7 @@ export class ParameterStore {
       activeLyricIndex: initial?.activeLyricIndex ?? -1,
       tempoBpm: initial?.tempoBpm ?? DEFAULT_TEMPO_BPM,
       movementId: initial?.movementId ?? DEFAULT_MOVEMENT_ID,
+      fontId: initial?.fontId ?? DEFAULT_FONT_ID,
     };
 
     this.channel = typeof window !== "undefined" && "BroadcastChannel" in window
@@ -132,6 +137,14 @@ export class ParameterStore {
     }, { broadcast: true });
   }
 
+  setFont(fontId: FontId): void {
+    const resolved = this.resolveFont(fontId);
+    this.applyState({
+      ...this.state,
+      fontId: resolved.id,
+    }, { broadcast: true });
+  }
+
   setMovement(movementId: MovementId): void {
     this.applyState({
       ...this.state,
@@ -168,17 +181,22 @@ export class ParameterStore {
 
     return {
       message: state.message ?? DEFAULT_MESSAGE,
-      manualMessage: state.manualMessage ?? DEFAULT_MESSAGE,
-      selectedSongId: state.selectedSongId,
-      activeLyricIndex: state.activeLyricIndex,
+      manualMessage: state.manualMessage ?? state.message ?? DEFAULT_MESSAGE,
+      selectedSongId: state.selectedSongId ?? null,
+      activeLyricIndex: state.activeLyricIndex ?? -1,
       tempoBpm: this.sanitizeTempo(state.tempoBpm),
       movementId: resolvedMovement.id,
+      fontId: this.resolveFont(state.fontId).id,
     };
   }
 
   private sanitizeTempo(candidate: number | undefined): number {
     const tempo = Number.isFinite(candidate) ? Number(candidate) : DEFAULT_TEMPO_BPM;
     return Math.max(1, tempo);
+  }
+
+  private resolveFont(fontId: FontId | undefined): FontDefinition {
+    return getFontById(fontId ?? DEFAULT_FONT_ID);
   }
 
   private emit(): void {

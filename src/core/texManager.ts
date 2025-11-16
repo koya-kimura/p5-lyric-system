@@ -1,7 +1,7 @@
 import p5 from "p5";
 
 import type { Scene } from "../interfaces/Scene";
-import { SampleScene } from "../scenes/sampleScene";
+import { SampleScene } from "../scenes/mainScene";
 import type { ParameterStore } from "./parameterStore";
 import { getMovementById } from "../movements";
 import type { Movement } from "../interfaces/Movement";

@@ -3,6 +3,7 @@ import { ControlPanel } from "./controlPanel";
 import { loadLyricsLibrary } from "./lyricsService";
 import type { LyricsLibrary, SongLyrics } from "./lyricsService";
 import { TelemetryChannel } from "../core/telemetry";
+import { loadFontCatalog } from "../core/fontRegistry";
 
 export type ClientRole = "control" | "perform";
 
@@ -61,6 +62,7 @@ const setupPerformLayout = (): LayoutContext => {
 export const bootstrapClient = async (): Promise<AppContext> => {
   const role = resolveClientRole();
   const performanceUrl = buildPerformanceUrl();
+  await loadFontCatalog();
   const store = new ParameterStore();
   const telemetry = new TelemetryChannel();
 

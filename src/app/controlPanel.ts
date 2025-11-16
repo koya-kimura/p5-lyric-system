@@ -1,7 +1,8 @@
-import type { ParameterStore, ParameterState, MovementId } from "../core/parameterStore";
+import type { ParameterStore, ParameterState, MovementId, FontId } from "../core/parameterStore";
 import type { LyricsLibrary } from "./lyricsService";
 import { TelemetryChannel, type TelemetryEvent } from "../core/telemetry";
 import { movements } from "../movements";
+import { getFontCatalog, getFontById, ensureFontLoaded } from "../core/fontRegistry";
 
 export type ControlPanelContext = {
   canvasParent: HTMLElement;
@@ -36,6 +37,8 @@ export class ControlPanel {
   private readonly tempoSlider: HTMLInputElement;
   private readonly tempoValue: HTMLSpanElement;
   private readonly tempoBeatInfo: HTMLSpanElement;
+  private readonly fontSelect: HTMLSelectElement;
+  private readonly fontPreview: HTMLElement;
   private readonly movementRadios: Map<string, HTMLInputElement>;
   private readonly unsubscribe: () => void;
   private readonly panelStates: WeakMap<HTMLElement, PanelMetrics>;
@@ -298,13 +301,48 @@ export class ControlPanel {
 
     this.updateTempoLabel(this.state.tempoBpm);
 
+    const fontSection = document.createElement("section");
+    fontSection.className = "control-params control-fonts";
+
+    const fontTitle = document.createElement("h2");
+    fontTitle.textContent = "フォント";
+
+    const fontLabel = document.createElement("label");
+    fontLabel.className = "control-fonts-label";
+
+    const fontCaption = document.createElement("span");
+    fontCaption.textContent = "選択";
+
+    this.fontSelect = document.createElement("select");
+    this.fontSelect.className = "control-fonts-select";
+
+    getFontCatalog().forEach((font) => {
+      const option = document.createElement("option");
+      option.value = font.id;
+      option.textContent = font.label;
+      this.fontSelect.appendChild(option);
+    });
+    this.fontSelect.value = this.state.fontId;
+
+    fontLabel.append(fontCaption, this.fontSelect);
+
+    this.fontPreview = document.createElement("div");
+    this.fontPreview.className = "control-fonts-preview";
+    this.fontPreview.textContent = "Aa あア 123";
+    this.applyFontPreview(this.state.fontId);
+    void ensureFontLoaded(getFontById(this.state.fontId));
+
+    fontSection.append(fontTitle, fontLabel, this.fontPreview);
+
+    const fontPanel = this.createPanel("font", fontSection);
+
     const leftColumn = document.createElement("div");
     leftColumn.className = "control-column control-column--left";
     leftColumn.append(this.previewPanel, infoPanel);
 
     const centerColumn = document.createElement("div");
     centerColumn.className = "control-column control-column--center";
-    centerColumn.append(tempoPanel, movementPanel);
+    centerColumn.append(tempoPanel, fontPanel, movementPanel);
 
     const rightColumn = document.createElement("div");
     rightColumn.className = "control-column control-column--right";
@@ -336,6 +374,14 @@ export class ControlPanel {
       if (!Number.isNaN(bpm)) {
         this.store.setTempoBpm(bpm);
       }
+    });
+
+    this.fontSelect.addEventListener("change", () => {
+      const fontId = this.fontSelect.value as FontId;
+      const font = getFontById(fontId);
+      this.applyFontPreview(fontId);
+      void ensureFontLoaded(font);
+      this.store.setFont(fontId);
     });
 
     this.lyricsList.addEventListener("click", (event) => {
@@ -717,6 +763,12 @@ export class ControlPanel {
       this.updateTempoLabel(state.tempoBpm);
     }
 
+    if (this.fontSelect.value !== state.fontId) {
+      this.fontSelect.value = state.fontId;
+      this.applyFontPreview(state.fontId);
+      void ensureFontLoaded(getFontById(state.fontId));
+    }
+
     this.syncMovementSelection(state.movementId);
 
     if (state.selectedSongId) {
@@ -746,6 +798,11 @@ export class ControlPanel {
     this.tempoValue.textContent = `${sanitizedBpm.toFixed(0)} BPM`;
     const msPerBeat = 60000 / sanitizedBpm;
     this.tempoBeatInfo.textContent = `1拍 ≈ ${(msPerBeat / 1000).toFixed(2)}s`;
+  }
+
+  private applyFontPreview(fontId: FontId): void {
+    const font = getFontById(fontId);
+    this.fontPreview.style.fontFamily = font.family;
   }
 
   private syncMovementSelection(movementId: MovementId): void {
