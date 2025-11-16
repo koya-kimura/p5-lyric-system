@@ -1,0 +1,16 @@
+{
+  "songs": [
+    {
+      "title": "Starlight Parade",
+      "file": "songs/starlight_parade.csv"
+    },
+    {
+      "title": "Blue Horizon",
+      "file": "songs/blue_horizon.csv"
+    },
+    {
+      "title": "Midnight City",
+      "file": "songs/midnight_city.csv"
+    }
+  ]
+}
