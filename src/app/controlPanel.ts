@@ -55,7 +55,6 @@ export class ControlPanel {
   private originalCursor: string;
   private originalUserSelect: string;
   private tapTempoSamples: number[];
-  private tapFeedbackTimeoutId: number | null;
 
   constructor(options: ControlPanelOptions) {
     this.store = options.store;
@@ -74,7 +73,6 @@ export class ControlPanel {
     this.originalCursor = "";
     this.originalUserSelect = "";
     this.tapTempoSamples = [];
-    this.tapFeedbackTimeoutId = null;
 
     this.layout = document.createElement("div");
     this.layout.className = "control-layout";
@@ -856,8 +854,6 @@ export class ControlPanel {
       samples.splice(0, samples.length - 8);
     }
 
-    this.flashTapTempoButton();
-
     if (samples.length < 2) {
       return;
     }
@@ -886,17 +882,6 @@ export class ControlPanel {
     this.tempoSlider.value = String(clamped);
     this.updateTempoLabel(clamped);
     this.store.setTempoBpm(clamped);
-  }
-
-  private flashTapTempoButton(): void {
-    this.tapTempoButton.classList.add("is-tapped");
-    if (this.tapFeedbackTimeoutId !== null) {
-      window.clearTimeout(this.tapFeedbackTimeoutId);
-    }
-    this.tapFeedbackTimeoutId = window.setTimeout(() => {
-      this.tapTempoButton.classList.remove("is-tapped");
-      this.tapFeedbackTimeoutId = null;
-    }, 160);
   }
 
   private applyFontPreview(fontId: FontId): void {

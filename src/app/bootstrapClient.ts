@@ -75,6 +75,20 @@ export const bootstrapClient = async (): Promise<AppContext> => {
   document.body.classList.add("role-control");
   const root = ensureAppRoot();
 
+  const header = document.createElement("header");
+  header.className = "app-header";
+
+  const title = document.createElement("h1");
+  title.className = "app-header__title";
+  title.textContent = "P5 Lyric System";
+
+  header.appendChild(title);
+
+  const main = document.createElement("div");
+  main.className = "app-main";
+
+  root.append(header, main);
+
   let lyricsLibrary: LyricsLibrary;
   try {
     lyricsLibrary = await loadLyricsLibrary();
@@ -84,7 +98,7 @@ export const bootstrapClient = async (): Promise<AppContext> => {
   }
 
   const panel = new ControlPanel({
-    root,
+    root: main,
     store,
     performanceUrl,
     lyrics: lyricsLibrary,

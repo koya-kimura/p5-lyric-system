@@ -3,6 +3,7 @@ export type MovementContext = {
   p: p5;
   tex: p5.Graphics;
   message: string;
+  lyricIndex: number;
   elapsedMs: number;
   bpm: number;
   beatsElapsed: number;
@@ -13,6 +14,7 @@ export type Movement = {
   label: string;
   description?: string;
   draw: (context: MovementContext) => void;
+  onLyricChange?: (payload: { message: string; lyricIndex: number }) => void;
 };
 
 export const movements: Movement[] = [

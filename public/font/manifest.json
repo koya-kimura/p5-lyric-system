@@ -1,11 +1,6 @@
 {
   "fonts": [
     {
-      "id": "systemSans",
-      "label": "システム サンセリフ",
-      "family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    },
-    {
       "id": "genEiKiwamiGo",
       "label": "源暎キワミゴ",
       "family": "'GenEiKiwamiGo'",
@@ -64,6 +59,11 @@
         "style": "normal",
         "weight": "400"
       }
+    },
+    {
+      "id": "systemSans",
+      "label": "システム サンセリフ",
+      "family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     }
   ]
 }

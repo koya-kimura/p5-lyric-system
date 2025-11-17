@@ -1,6 +1,10 @@
 {
   "songs": [
     {
+      "title": "テスト単語",
+      "file": "songs/word.csv"
+    },
+    {
       "title": "あつまれ! パーティーピーポー",
       "file": "songs/atsumare_party.csv"
     }

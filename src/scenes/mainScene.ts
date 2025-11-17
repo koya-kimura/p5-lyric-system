@@ -8,7 +8,7 @@ import { ensureFontLoaded, getFontById, getP5FontById, type FontId } from "../co
 // SampleScene はテンプレート用の最小シーン実装を提供する。
 export class SampleScene implements Scene {
     private displayedMessage: string;
-    private pendingMessage: { text: string; bpm: number; movementId: string; fontId: FontId } | null;
+    private pendingMessage: { text: string; bpm: number; movementId: string; fontId: FontId; lyricIndex: number } | null;
     private latestMessageVersion: number;
 
     // movement tempo (beats per minute)
@@ -16,6 +16,8 @@ export class SampleScene implements Scene {
     private activeMovementId = "fade";
     private activeFontId: FontId;
     private requestedFontId: FontId;
+    private activeLyricIndex: number;
+    private lyricChangeEvent: { message: string; lyricIndex: number } | null;
 
     // when the current movement animation started (used to compute movement beats)
     private movementStart = Number.NEGATIVE_INFINITY;
@@ -29,6 +31,8 @@ export class SampleScene implements Scene {
         this.activeMovementId = initialState.movementId;
         this.activeFontId = initialState.fontId;
         this.requestedFontId = initialState.fontId;
+        this.activeLyricIndex = initialState.activeLyricIndex;
+        this.lyricChangeEvent = null;
 
         void ensureFontLoaded(getFontById(this.activeFontId));
 
@@ -49,6 +53,7 @@ export class SampleScene implements Scene {
                     bpm: nextTempoBpm,
                     movementId: state.movementId,
                     fontId: this.requestedFontId,
+                    lyricIndex: state.activeLyricIndex,
                 };
                 return;
             }
@@ -62,6 +67,7 @@ export class SampleScene implements Scene {
                     bpm: nextTempoBpm,
                     movementId: state.movementId,
                     fontId: this.requestedFontId,
+                    lyricIndex: this.activeLyricIndex,
                 };
             }
         });
@@ -73,11 +79,26 @@ export class SampleScene implements Scene {
 
         // Apply pending message immediately when present.
         if (this.pendingMessage) {
+            const previousLyricIndex = this.activeLyricIndex;
+            const previousMessage = this.displayedMessage;
             this.displayedMessage = this.pendingMessage.text;
             this.activeMovementBpm = this.pendingMessage.bpm;
             this.activeMovementId = this.pendingMessage.movementId;
             this.activeFontId = this.pendingMessage.fontId;
+            this.activeLyricIndex = this.pendingMessage.lyricIndex;
             void ensureFontLoaded(getFontById(this.activeFontId));
+            if (
+                this.pendingMessage.lyricIndex >= 0
+                && (this.pendingMessage.lyricIndex !== previousLyricIndex
+                    || this.pendingMessage.text !== previousMessage)
+            ) {
+                this.lyricChangeEvent = {
+                    message: this.pendingMessage.text,
+                    lyricIndex: this.pendingMessage.lyricIndex,
+                };
+            } else {
+                this.lyricChangeEvent = null;
+            }
             this.pendingMessage = null;
             this.movementStart = now;
         }
@@ -102,6 +123,14 @@ export class SampleScene implements Scene {
         const movementToUse = movement.id === this.activeMovementId
             ? movement
             : getMovementById(this.activeMovementId);
+        const lyricEvent = this.lyricChangeEvent;
+        if (lyricEvent && typeof movementToUse.onLyricChange === "function") {
+            movementToUse.onLyricChange({
+                message: lyricEvent.message,
+                lyricIndex: lyricEvent.lyricIndex,
+            });
+        }
+        this.lyricChangeEvent = null;
 
         const font = getFontById(this.activeFontId);
         const p5Font = getP5FontById(this.activeFontId);
@@ -116,6 +145,7 @@ export class SampleScene implements Scene {
                 p,
                 tex,
                 message: this.displayedMessage,
+                lyricIndex: this.activeLyricIndex,
                 elapsedMs: movementElapsed,
                 bpm: this.activeMovementBpm,
                 beatsElapsed,
@@ -123,10 +153,17 @@ export class SampleScene implements Scene {
         } catch (error) {
             console.warn("Movement draw failed", error);
             const fallback = getMovementById("fade");
+            if (lyricEvent && typeof fallback.onLyricChange === "function") {
+                fallback.onLyricChange({
+                    message: lyricEvent.message,
+                    lyricIndex: lyricEvent.lyricIndex,
+                });
+            }
             fallback.draw({
                 p,
                 tex,
                 message: this.displayedMessage,
+                lyricIndex: this.activeLyricIndex,
                 elapsedMs: movementElapsed,
                 bpm: this.activeMovementBpm,
                 beatsElapsed,
