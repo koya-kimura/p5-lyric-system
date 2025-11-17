@@ -58,17 +58,8 @@ export class SampleScene implements Scene {
                 return;
             }
 
-            const tempoChanged = this.activeMovementBpm !== nextTempoBpm;
-            const movementChanged = this.activeMovementId !== state.movementId;
-
-            if (tempoChanged || movementChanged) {
-                this.pendingMessage = {
-                    text: this.displayedMessage,
-                    bpm: nextTempoBpm,
-                    movementId: state.movementId,
-                    fontId: this.requestedFontId,
-                    lyricIndex: this.activeLyricIndex,
-                };
+            if (this.activeLyricIndex !== state.activeLyricIndex && state.activeLyricIndex < 0) {
+                this.activeLyricIndex = state.activeLyricIndex;
             }
         });
     }

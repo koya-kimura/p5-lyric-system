@@ -5,12 +5,12 @@
  * MIDIの入出力の初期化、メッセージの処理を担当します。
  */
 export class MIDIManager {
-    private midiOutput: WebMidi.MIDIOutput | null = null;
+    private midiOutput: MIDIOutput | null = null;
     public midiSuccess: boolean = false;
     private readonly MIDI_ACCESS_DELAY: number = 1000; // 1秒の遅延
 
     // MIDIメッセージ受信時に実行されるコールバック関数
-    public onMidiMessageCallback: ((message: WebMidi.MIDIMessageEvent) => void) | null = null;
+    public onMidiMessageCallback: ((message: MIDIMessageEvent) => void) | null = null;
 
     /**
      * コンストラクタ
@@ -45,7 +45,7 @@ export class MIDIManager {
      * MIDI接続成功時の処理
      * @param midiAccess MIDIAccessインターフェースのインスタンス
      */
-    private onMIDISuccess(midiAccess: WebMidi.MIDIAccess): void {
+    private onMIDISuccess(midiAccess: MIDIAccess): void {
         const inputs = Array.from(midiAccess.inputs.values());
         const input = inputs[0];
 
@@ -96,7 +96,7 @@ export class MIDIManager {
      * MIDIメッセージ受信時のハンドラ
      * @param message MIDIメッセージイベント
      */
-    private onMIDIMessage(message: WebMidi.MIDIMessageEvent): void {
+    private onMIDIMessage(message: MIDIMessageEvent): void {
         // 外部から設定されたコールバックがあれば実行
         if (this.onMidiMessageCallback) {
             this.onMidiMessageCallback(message);

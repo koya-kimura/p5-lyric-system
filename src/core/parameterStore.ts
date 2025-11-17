@@ -13,6 +13,7 @@ type ParameterStateBase = {
   message: string;
   messageVersion: number;
   manualMessage: string;
+  manualOverrideVersion: number | null;
   selectedSongId: string | null;
   activeLyricIndex: number;
   tempoBpm: number;
@@ -43,6 +44,7 @@ export class ParameterStore {
       message: initial?.message ?? DEFAULT_MESSAGE,
       messageVersion: initial?.messageVersion ?? 0,
       manualMessage: initial?.manualMessage ?? (initial?.message ?? DEFAULT_MESSAGE),
+      manualOverrideVersion: initial?.manualOverrideVersion ?? null,
       selectedSongId: initial?.selectedSongId ?? null,
       activeLyricIndex: initial?.activeLyricIndex ?? -1,
       tempoBpm: initial?.tempoBpm ?? DEFAULT_TEMPO_BPM,
@@ -117,6 +119,7 @@ export class ParameterStore {
       message,
       messageVersion: nextVersion,
       manualMessage: message,
+      manualOverrideVersion: nextVersion,
       activeLyricIndex: -1,
     }, { broadcast: true });
   }
@@ -137,6 +140,7 @@ export class ParameterStore {
       activeLyricIndex: payload.index,
       message: payload.text,
       messageVersion: nextVersion,
+      manualOverrideVersion: null,
     }, { broadcast: true });
   }
 
@@ -163,7 +167,22 @@ export class ParameterStore {
   }
 
   private applyState(nextState: ParameterState | SerializableState, options: SetStateOptions): void {
-    this.state = this.normalizeState(nextState);
+    const normalized = this.normalizeState(nextState);
+    if (normalized.messageVersion < this.state.messageVersion) {
+      return;
+    }
+
+    const manualOverrideActive = this.state.manualOverrideVersion !== null
+      && this.state.manualOverrideVersion === this.state.messageVersion;
+    if (
+      manualOverrideActive
+      && normalized.manualOverrideVersion === null
+      && normalized.messageVersion === this.state.messageVersion
+    ) {
+      return;
+    }
+
+    this.state = normalized;
     this.emit();
 
     if (!options.broadcast) {
@@ -193,6 +212,7 @@ export class ParameterStore {
       message: state.message ?? DEFAULT_MESSAGE,
       messageVersion: this.sanitizeVersion(state.messageVersion),
       manualMessage: state.manualMessage ?? state.message ?? DEFAULT_MESSAGE,
+      manualOverrideVersion: this.sanitizeManualOverride(state.manualOverrideVersion),
       selectedSongId: state.selectedSongId ?? null,
       activeLyricIndex: state.activeLyricIndex ?? -1,
       tempoBpm: this.sanitizeTempo(state.tempoBpm),
@@ -212,6 +232,14 @@ export class ParameterStore {
     }
     const value = Math.floor(Number(candidate));
     return value < 0 ? 0 : value;
+  }
+
+  private sanitizeManualOverride(candidate: number | null | undefined): number | null {
+    if (!Number.isFinite(candidate)) {
+      return null;
+    }
+    const value = Math.floor(Number(candidate));
+    return value < 0 ? null : value;
   }
 
   private resolveFont(fontId: FontId | undefined): FontDefinition {

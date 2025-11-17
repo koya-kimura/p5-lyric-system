@@ -34,13 +34,20 @@ export class TwoBoxMovement implements Movement {
     tex.textSize(maxSize);
     tex.rotate(angle);
 
-    for (let i = 0; i < this.array.length; i++) {
-      const x = this.array[i]?.x * tex.width * 0.4;
-      const y = this.array[i]?.y * tex.height * 0.4;
-      const message = this.array[i]?.message;
-      const alpha = i == this.array.length -1 ? Math.min(scaled, 1) : 1;
+    const fallback = (message && message.length > 0)
+      ? [{ x: 0, y: 0, message }]
+      : [];
+    const entries = this.array.length > 0 ? this.array : fallback;
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const x = entry?.x * tex.width * 0.4;
+      const y = entry?.y * tex.height * 0.4;
+      const entryMessage = entry?.message;
+      const isNewestEntry = i === entries.length - 1;
+      const alpha = isNewestEntry ? Math.min(scaled, 1) : 1;
       const rectWidth = tex.textWidth("W") * 1.5;
-      const rectHeight = tex.textWidth("W") * message.length * 1.2;
+      const rectHeight = tex.textWidth("W") * (entryMessage?.length ?? 0) * 1.2;
 
       tex.push();
       tex.translate(x, y);
@@ -52,7 +59,7 @@ export class TwoBoxMovement implements Movement {
 
       tex.fill(255, Math.min(alpha * 255, 255));
       tex.noStroke();
-      VertText.vertText(p, tex, message || "", 0, 0, "CENTER");
+      VertText.vertText(p, tex, entryMessage || "", 0, 0, "CENTER");
       tex.pop();
     }
     tex.pop();
