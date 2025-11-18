@@ -1,4 +1,5 @@
 import type p5 from "p5";
+import type { FontId } from "../core/fontRegistry";
 export type MovementContext = {
   p: p5;
   tex: p5.Graphics;
@@ -7,6 +8,8 @@ export type MovementContext = {
   elapsedMs: number;
   bpm: number;
   beatsElapsed: number;
+  fontId: FontId;
+  color: string;
 };
 
 export type Movement = {
@@ -14,7 +17,7 @@ export type Movement = {
   label: string;
   description?: string;
   draw: (context: MovementContext) => void;
-  onLyricChange?: (payload: { message: string; lyricIndex: number }) => void;
+  onLyricChange?: (payload: { message: string; lyricIndex: number; fontId: FontId; color: string }) => void;
 };
 
 export const movements: Movement[] = [

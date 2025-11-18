@@ -11,6 +11,7 @@ const DEFAULT_MOVEMENT_ID: MovementId = movements[0]?.id ?? "fade";
 const DEFAULT_TEMPO_BPM = 120;
 const DEFAULT_FONT_ID: FontId = getDefaultFontId();
 const DEFAULT_DISPLAY_MODE: DisplayMode = "lyrics";
+const DEFAULT_COLOR = "#38BDF8";
 
 type ParameterStateBase = {
   message: string;
@@ -22,6 +23,7 @@ type ParameterStateBase = {
   tempoBpm: number;
   fontId: FontId;
   displayMode: DisplayMode;
+  color: string;
 };
 
 export type ParameterState = ParameterStateBase & {
@@ -55,6 +57,7 @@ export class ParameterStore {
       movementId: initial?.movementId ?? DEFAULT_MOVEMENT_ID,
       fontId: initial?.fontId ?? DEFAULT_FONT_ID,
       displayMode: initial?.displayMode ?? DEFAULT_DISPLAY_MODE,
+      color: this.sanitizeColor(initial?.color),
     };
 
     this.channel = typeof window !== "undefined" && "BroadcastChannel" in window
@@ -172,6 +175,13 @@ export class ParameterStore {
     }, { broadcast: true });
   }
 
+  setColor(color: string): void {
+    this.applyState({
+      ...this.state,
+      color: this.sanitizeColor(color),
+    }, { broadcast: true });
+  }
+
   setMovement(movementId: MovementId): void {
     this.applyState({
       ...this.state,
@@ -232,6 +242,7 @@ export class ParameterStore {
       movementId: resolvedMovement.id,
       fontId: this.resolveFont(state.fontId).id,
       displayMode: this.normalizeDisplayMode(state.displayMode),
+      color: this.sanitizeColor(state.color),
     };
   }
 
@@ -258,6 +269,22 @@ export class ParameterStore {
 
   private resolveFont(fontId: FontId | undefined): FontDefinition {
     return getFontById(fontId ?? DEFAULT_FONT_ID);
+  }
+
+  private sanitizeColor(candidate: string | undefined | null): string {
+    if (typeof candidate === "string") {
+      const value = candidate.trim();
+      if (/^#([0-9a-f]{3}){1,2}$/i.test(value)) {
+        if (value.length === 4) {
+          const r = value.charAt(1);
+          const g = value.charAt(2);
+          const b = value.charAt(3);
+          return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+        }
+        return value.toUpperCase();
+      }
+    }
+    return DEFAULT_COLOR;
   }
 
   private normalizeDisplayMode(candidate: DisplayMode | string | undefined): DisplayMode {

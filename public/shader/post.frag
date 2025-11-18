@@ -51,9 +51,9 @@ void main(void) {
     vec2 uv = vTexCoord;
     vec4 col = texture2D(u_tex, uv);
     float alpha = clamp(col.a, 0.0, 1.0);
-    vec3 keyColor = vec3(0.1255, 0.0, 0.6824);
+    vec3 keyColor = vec3(0.0, 1.0, 0.0);
 
-    if (alpha <= 0.0001) {
+    if (alpha <= 0.0001 || (col.r == keyColor.r && col.g == keyColor.g && col.b == keyColor.b)) {
         gl_FragColor = vec4(keyColor, 1.0);
         return;
     }

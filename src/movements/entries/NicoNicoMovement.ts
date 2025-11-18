@@ -1,13 +1,13 @@
 import p5 from "p5";
-import type { Movement, MovementContext } from "../../interfaces/Movement";
+import type { Movement, MovementContext, MovementLyricPayload } from "../../interfaces/Movement";
 
 export class NicoNicoMovement implements Movement {
   readonly id = "NicoNico";
   readonly label = "ニコニコ";
   private niconicoArray: NicoNicoText[] = [];
 
-  onLyricChange(payload: { message: string; lyricIndex: number; }): void {
-    this.niconicoArray.push(new NicoNicoText(payload.message));
+  onLyricChange(payload: MovementLyricPayload): void {
+    this.niconicoArray.push(new NicoNicoText(payload.message, payload.color));
   }
 
   draw({ p, tex, message, beatsElapsed }: MovementContext): void {
@@ -27,13 +27,14 @@ class NicoNicoText {
   private y: number
   private vx: number;
   private message: string;
+  private color: string;
 
-
-  constructor(message: string) {
+  constructor(message: string, color: string) {
     this.x = 1.0;
     this.y = Math.random();
     this.message = message;
     this.vx = Math.random() * 0.002 + 0.005;
+    this.color = color;
   }
 
   update(){
@@ -48,7 +49,7 @@ class NicoNicoText {
     tex.push();
     tex.textAlign(p.LEFT, p.CENTER);
     tex.textSize(s);
-    tex.fill(255);
+    tex.fill(this.color);
     tex.noStroke();
     tex.text(this.message, x, y);
     tex.pop();

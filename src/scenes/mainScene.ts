@@ -1,14 +1,14 @@
 import p5 from "p5";
 import type { Scene } from "../interfaces/Scene";
 import type { ParameterStore, DisplayMode } from "../core/parameterStore";
-import type { Movement } from "../interfaces/Movement";
+import type { Movement, MovementLyricPayload } from "../interfaces/Movement";
 import { getMovementById } from "../movements";
 import { ensureFontLoaded, getFontById, getP5FontById, type FontId } from "../core/fontRegistry";
 
 // SampleScene はテンプレート用の最小シーン実装を提供する。
 export class SampleScene implements Scene {
     private displayedMessage: string;
-    private pendingMessage: { text: string; bpm: number; movementId: string; fontId: FontId; lyricIndex: number } | null;
+    private pendingMessage: { text: string; bpm: number; movementId: string; fontId: FontId; color: string; lyricIndex: number } | null;
     private latestMessageVersion: number;
 
     // movement tempo (beats per minute)
@@ -16,8 +16,9 @@ export class SampleScene implements Scene {
     private activeMovementId = "fade";
     private activeFontId: FontId;
     private requestedFontId: FontId;
+    private activeColor: string;
     private activeLyricIndex: number;
-    private lyricChangeEvent: { message: string; lyricIndex: number } | null;
+    private lyricChangeEvent: MovementLyricPayload | null;
     private activeDisplayMode: DisplayMode;
     private logoImage: p5.Image | null = null;
     private isLogoLoading = false;
@@ -34,6 +35,7 @@ export class SampleScene implements Scene {
         this.activeMovementId = initialState.movementId;
         this.activeFontId = initialState.fontId;
         this.requestedFontId = initialState.fontId;
+        this.activeColor = initialState.color;
         this.activeLyricIndex = initialState.activeLyricIndex;
         this.lyricChangeEvent = null;
         this.activeDisplayMode = initialState.displayMode;
@@ -48,6 +50,10 @@ export class SampleScene implements Scene {
                 void ensureFontLoaded(getFontById(this.requestedFontId));
             }
 
+            if (this.activeFontId !== state.fontId) {
+                this.activeFontId = state.fontId;
+            }
+
             const nextMessageVersion = state.messageVersion;
 
             if (this.latestMessageVersion !== nextMessageVersion) {
@@ -57,6 +63,7 @@ export class SampleScene implements Scene {
                     bpm: nextTempoBpm,
                     movementId: state.movementId,
                     fontId: this.requestedFontId,
+                    color: state.color,
                     lyricIndex: state.activeLyricIndex,
                 };
                 return;
@@ -70,10 +77,15 @@ export class SampleScene implements Scene {
                         bpm: nextTempoBpm,
                         movementId: state.movementId,
                         fontId: this.requestedFontId,
+                        color: state.color,
                         lyricIndex: state.activeLyricIndex,
                     };
                 }
                 return;
+            }
+
+            if (this.activeColor !== state.color) {
+                this.activeColor = state.color;
             }
 
             if (this.activeLyricIndex !== state.activeLyricIndex && state.activeLyricIndex < 0) {
@@ -94,6 +106,7 @@ export class SampleScene implements Scene {
             this.activeMovementBpm = this.pendingMessage.bpm;
             this.activeMovementId = this.pendingMessage.movementId;
             this.activeFontId = this.pendingMessage.fontId;
+            this.activeColor = this.pendingMessage.color;
             this.activeLyricIndex = this.pendingMessage.lyricIndex;
             void ensureFontLoaded(getFontById(this.activeFontId));
             if (
@@ -104,6 +117,8 @@ export class SampleScene implements Scene {
                 this.lyricChangeEvent = {
                     message: this.pendingMessage.text,
                     lyricIndex: this.pendingMessage.lyricIndex,
+                    fontId: this.pendingMessage.fontId,
+                    color: this.pendingMessage.color,
                 };
             } else {
                 this.lyricChangeEvent = null;
@@ -152,6 +167,8 @@ export class SampleScene implements Scene {
             movementToUse.onLyricChange({
                 message: lyricEvent.message,
                 lyricIndex: lyricEvent.lyricIndex,
+                fontId: lyricEvent.fontId,
+                color: lyricEvent.color,
             });
         }
         this.lyricChangeEvent = null;
@@ -173,6 +190,8 @@ export class SampleScene implements Scene {
                 elapsedMs: movementElapsed,
                 bpm: this.activeMovementBpm,
                 beatsElapsed,
+                fontId: this.activeFontId,
+                color: this.activeColor,
             });
         } catch (error) {
             console.warn("Movement draw failed", error);
@@ -181,6 +200,8 @@ export class SampleScene implements Scene {
                 fallback.onLyricChange({
                     message: lyricEvent.message,
                     lyricIndex: lyricEvent.lyricIndex,
+                    fontId: lyricEvent.fontId,
+                    color: lyricEvent.color,
                 });
             }
             fallback.draw({
@@ -191,6 +212,8 @@ export class SampleScene implements Scene {
                 elapsedMs: movementElapsed,
                 bpm: this.activeMovementBpm,
                 beatsElapsed,
+                fontId: this.activeFontId,
+                color: this.activeColor,
             });
         }
 

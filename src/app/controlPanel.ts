@@ -38,14 +38,21 @@ export class ControlPanel {
   private readonly tempoValue: HTMLSpanElement;
   private readonly tempoBeatInfo: HTMLSpanElement;
   private readonly tapTempoButton: HTMLButtonElement;
+  private tapTempoActiveTimeout: number | null;
   private readonly fontSelect: HTMLSelectElement;
   private readonly fontPreview: HTMLElement;
+  private readonly colorInput: HTMLInputElement;
+  private readonly colorValue: HTMLSpanElement;
   private readonly displayModeButtons: Map<DisplayMode, HTMLButtonElement>;
   private readonly movementRadios: Map<string, HTMLInputElement>;
   private readonly unsubscribe: () => void;
   private readonly panelStates: WeakMap<HTMLElement, PanelMetrics>;
   private readonly infoFpsValue: HTMLSpanElement;
   private readonly infoClockValue: HTMLSpanElement;
+  private readonly infoKeyValue: HTMLSpanElement;
+  private readonly globalKeyListener: (event: KeyboardEvent) => void;
+  private readonly handleWindowBlur: () => void;
+  private readonly isMacPlatform: boolean;
   private state: ParameterState;
   private renderedSongId: string | null;
   private telemetryUnsubscribe: (() => void) | null;
@@ -75,6 +82,7 @@ export class ControlPanel {
     this.originalUserSelect = "";
     this.tapTempoSamples = [];
     this.displayModeButtons = new Map();
+    this.isMacPlatform = this.detectMacPlatform();
 
     this.layout = document.createElement("div");
     this.layout.className = "control-layout";
@@ -216,11 +224,24 @@ export class ControlPanel {
 
     const clockMetric = this.createInfoMetric("現在時刻");
     this.infoClockValue = clockMetric.value;
+    const keyMetric = this.createInfoMetric("入力キー", {
+      valueClassName: "control-info-value control-info-value--keys",
+    });
+    this.infoKeyValue = keyMetric.value;
 
-    infoGrid.append(fpsMetric.container, clockMetric.container);
+    infoGrid.append(fpsMetric.container, clockMetric.container, keyMetric.container);
     infoSection.append(infoTitle, infoGrid);
 
     const infoPanel = this.createPanel("info", infoSection);
+
+    this.handleWindowBlur = () => {
+      this.resetKeyDisplay();
+    };
+
+    this.globalKeyListener = (event) => {
+      this.onKeyDown(event);
+      this.handleKeyDown(event);
+    };
 
     const movementSection = document.createElement("section");
     movementSection.className = "control-params control-movements";
@@ -302,6 +323,7 @@ export class ControlPanel {
     this.tapTempoButton.type = "button";
     this.tapTempoButton.className = "control-tap-tempo secondary";
     this.tapTempoButton.textContent = "タップテンポ";
+    this.tapTempoActiveTimeout = null;
 
     tempoLabel.append(tempoCaption, tempoControls);
     this.tempoBeatInfo = tempoBeatInfo;
@@ -340,7 +362,30 @@ export class ControlPanel {
     this.applyFontPreview(this.state.fontId);
     void ensureFontLoaded(getFontById(this.state.fontId));
 
-    fontSection.append(fontTitle, fontLabel, this.fontPreview);
+    const colorField = document.createElement("label");
+    colorField.className = "control-color-field";
+
+    const colorCaption = document.createElement("span");
+    colorCaption.className = "control-color-caption";
+    colorCaption.textContent = "カラー";
+
+    this.colorInput = document.createElement("input");
+    this.colorInput.type = "color";
+    this.colorInput.className = "control-color-picker";
+    this.colorInput.value = this.state.color.toLowerCase();
+    this.colorInput.setAttribute("aria-label", "カラー選択");
+
+    this.colorValue = document.createElement("span");
+    this.colorValue.className = "control-color-value";
+    this.colorValue.textContent = this.state.color.toUpperCase();
+    this.colorValue.setAttribute("role", "status");
+    this.colorValue.setAttribute("aria-live", "polite");
+
+    colorField.append(colorCaption, this.colorInput, this.colorValue);
+
+    this.updateColorPreview(this.state.color);
+
+    fontSection.append(fontTitle, fontLabel, this.fontPreview, colorField);
 
     const fontPanel = this.createPanel("font", fontSection);
 
@@ -429,8 +474,15 @@ export class ControlPanel {
       this.store.setFont(fontId);
     });
 
+    this.colorInput.addEventListener("input", () => {
+      const value = this.colorInput.value;
+      this.updateColorPreview(value);
+      this.store.setColor(value);
+    });
+
     this.tapTempoButton.addEventListener("click", () => {
       this.handleTapTempo();
+      this.flashTapTempoButton();
     });
 
     this.lyricsList.addEventListener("click", (event) => {
@@ -449,10 +501,6 @@ export class ControlPanel {
       this.triggerLyric(songId, index);
     });
 
-    this.handleKeyDown = this.handleKeyDown.bind(this);
-
-    window.addEventListener("keydown", this.handleKeyDown);
-
     this.ensureInitialSongSelection();
 
     this.unsubscribe = this.store.subscribe((state) => {
@@ -468,6 +516,9 @@ export class ControlPanel {
     this.clockTimerId = window.setInterval(() => {
       this.updateClock();
     }, 1000);
+
+    window.addEventListener("keydown", this.globalKeyListener);
+    window.addEventListener("blur", this.handleWindowBlur);
   }
 
   getContext(): ControlPanelContext {
@@ -485,7 +536,8 @@ export class ControlPanel {
 
   destroy(): void {
     this.unsubscribe();
-    window.removeEventListener("keydown", this.handleKeyDown);
+    window.removeEventListener("keydown", this.globalKeyListener);
+    window.removeEventListener("blur", this.handleWindowBlur);
     this.telemetryUnsubscribe?.();
     if (this.clockTimerId !== null) {
       window.clearInterval(this.clockTimerId);
@@ -495,6 +547,11 @@ export class ControlPanel {
       window.clearTimeout(this.fpsResetTimerId);
       this.fpsResetTimerId = null;
     }
+    if (this.tapTempoActiveTimeout !== null) {
+      window.clearTimeout(this.tapTempoActiveTimeout);
+      this.tapTempoActiveTimeout = null;
+    }
+    this.resetKeyDisplay();
   }
 
   private createPanel(kind: string, content: HTMLElement): HTMLElement {
@@ -618,7 +675,10 @@ export class ControlPanel {
     }
   }
 
-  private createInfoMetric(label: string): { container: HTMLElement; value: HTMLSpanElement } {
+  private createInfoMetric(
+    label: string,
+    options?: { valueClassName?: string },
+  ): { container: HTMLElement; value: HTMLSpanElement } {
     const container = document.createElement("div");
     container.className = "control-info-item";
 
@@ -627,7 +687,7 @@ export class ControlPanel {
     caption.textContent = label;
 
     const value = document.createElement("span");
-    value.className = "control-info-value";
+    value.className = options?.valueClassName ?? "control-info-value";
     value.textContent = "--";
 
     container.append(caption, value);
@@ -663,6 +723,111 @@ export class ControlPanel {
       hour12: false,
     });
     this.infoClockValue.textContent = formatter.format(new Date());
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    if (!document.hasFocus()) {
+      return;
+    }
+
+    const representation = this.formatKeyEvent(event);
+    if (!representation) {
+      return;
+    }
+
+    this.infoKeyValue.textContent = representation;
+  }
+
+  private resetKeyDisplay(): void {
+    this.infoKeyValue.textContent = "--";
+  }
+
+  private formatKeyEvent(event: KeyboardEvent): string {
+    const modifiers: string[] = [];
+
+    if (event.ctrlKey) {
+      modifiers.push(this.isMacPlatform ? "Control" : "Ctrl");
+    }
+    if (event.metaKey) {
+      modifiers.push(this.isMacPlatform ? "Command" : "Meta");
+    }
+    if (event.altKey) {
+      modifiers.push(this.isMacPlatform ? "Option" : "Alt");
+    }
+    if (event.shiftKey) {
+      modifiers.push("Shift");
+    }
+
+    const keyName = this.normalizeKeyName(event.key);
+    if (!keyName && modifiers.length === 0) {
+      return "";
+    }
+
+    const isModifierOnly = keyName !== "" && modifiers.some((modifier) => modifier.toLowerCase() === keyName.toLowerCase());
+    const parts = modifiers.slice();
+
+    if (!isModifierOnly && keyName) {
+      parts.push(keyName);
+    }
+
+    return parts.join(" + ") || keyName;
+  }
+
+  private normalizeKeyName(key: string): string {
+    if (!key) {
+      return "";
+    }
+
+    const replacements: Record<string, string> = {
+      " ": "Space",
+      Escape: "Esc",
+      ArrowUp: "Arrow Up",
+      ArrowDown: "Arrow Down",
+      ArrowLeft: "Arrow Left",
+      ArrowRight: "Arrow Right",
+      Enter: "Enter",
+      Backspace: "Backspace",
+      Tab: "Tab",
+      Delete: "Delete",
+      PageUp: "Page Up",
+      PageDown: "Page Down",
+      Home: "Home",
+      End: "End",
+      Meta: this.isMacPlatform ? "Command" : "Meta",
+      Control: this.isMacPlatform ? "Control" : "Ctrl",
+      Alt: this.isMacPlatform ? "Option" : "Alt",
+      Shift: "Shift",
+      CapsLock: "Caps Lock",
+    };
+
+    const replacement = replacements[key];
+    if (replacement) {
+      return replacement;
+    }
+
+    if (/^f\d{1,2}$/i.test(key)) {
+      return key.toUpperCase();
+    }
+
+    if (key.length === 1) {
+      return key.toUpperCase();
+    }
+
+    return key.replace(/^[a-z]/, (char) => char.toUpperCase());
+  }
+
+  private detectMacPlatform(): boolean {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+
+    const platform = navigator.platform?.toLowerCase() ?? "";
+    if (platform.includes("mac")) {
+      return true;
+    }
+
+    const userAgent = navigator.userAgent?.toLowerCase() ?? "";
+    return userAgent.includes("mac os");
   }
 
   private populateSongOptions(): void {
@@ -816,6 +981,68 @@ export class ControlPanel {
   private applyManualMessage(): void {
     const value = this.manualInput.value;
     this.store.setManualMessage(value);
+    this.canvasHost.focus();
+  }
+
+  private mapMovementHotkey(key: string): number | null {
+    switch (key) {
+      case "1":
+        return 0;
+      case "2":
+        return 1;
+      case "3":
+        return 2;
+      case "4":
+        return 3;
+      case "5":
+        return 4;
+      case "6":
+        return 5;
+      case "7":
+        return 6;
+      case "8":
+        return 7;
+      case "9":
+        return 8;
+      case "0":
+        return 9;
+      default:
+        return null;
+    }
+  }
+
+  private mapDisplayModeHotkey(key: string): DisplayMode | null {
+    switch (key) {
+      case "z":
+        return "lyrics";
+      case "x":
+        return "logo";
+      case "c":
+        return "blank";
+      default:
+        return null;
+    }
+  }
+
+  private mapFontHotkey(key: string): FontId | null {
+    const keyOrder: readonly string[] = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
+    const index = keyOrder.indexOf(key);
+    if (index === -1) {
+      return null;
+    }
+
+    const catalog = getFontCatalog();
+    const font = catalog[index];
+    return font?.id ?? null;
+  }
+
+  private selectMovementByIndex(index: number): void {
+    const movement = movements[index];
+    if (!movement) {
+      return;
+    }
+
+    this.store.setMovement(movement.id as MovementId);
   }
 
   private syncFromState(state: ParameterState): void {
@@ -842,6 +1069,15 @@ export class ControlPanel {
       void ensureFontLoaded(getFontById(state.fontId));
     }
 
+    const normalizedStateColor = state.color.toUpperCase();
+    const inputColorValue = state.color.toLowerCase();
+    if (this.colorInput.value.toLowerCase() !== inputColorValue) {
+      this.colorInput.value = inputColorValue;
+    }
+    if (this.colorValue.textContent !== normalizedStateColor) {
+      this.updateColorPreview(state.color);
+    }
+
     this.syncMovementSelection(state.movementId);
     this.syncDisplayModeSelection(state.displayMode);
 
@@ -863,15 +1099,65 @@ export class ControlPanel {
 
   private handleKeyDown(event: KeyboardEvent): void {
     const activeElement = document.activeElement as HTMLElement | null;
+    const isTyping = Boolean(activeElement && (activeElement.tagName === "TEXTAREA" || activeElement.tagName === "INPUT"));
 
     if (event.key === "Enter") {
-      const isTyping = activeElement && (activeElement.tagName === "TEXTAREA" || activeElement.tagName === "INPUT");
       if (!isTyping) {
         event.preventDefault();
         this.advanceLyric();
       }
       return;
     }
+
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
+
+    if (isTyping) {
+      return;
+    }
+
+    const normalizedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+    if (normalizedKey === "p") {
+      if (!event.repeat) {
+        event.preventDefault();
+        this.handleTapTempo();
+        this.flashTapTempoButton();
+      }
+    }
+
+    const displayModeHotkey = this.mapDisplayModeHotkey(normalizedKey);
+    if (displayModeHotkey) {
+      if (!event.repeat) {
+        event.preventDefault();
+        if (this.state.displayMode !== displayModeHotkey) {
+          this.store.setDisplayMode(displayModeHotkey);
+        }
+      }
+      return;
+    }
+
+    const fontId = this.mapFontHotkey(normalizedKey);
+    if (fontId) {
+      if (!event.repeat && this.state.fontId !== fontId) {
+        event.preventDefault();
+        this.store.setFont(fontId);
+      }
+      return;
+    }
+
+    const movementIndex = this.mapMovementHotkey(event.key);
+    if (movementIndex === null) {
+      return;
+    }
+
+    if (movementIndex >= movements.length) {
+      return;
+    }
+
+    event.preventDefault();
+    this.selectMovementByIndex(movementIndex);
   }
 
   private updateTempoLabel(bpm: number): void {
@@ -928,9 +1214,31 @@ export class ControlPanel {
     this.store.setTempoBpm(clamped);
   }
 
+  private flashTapTempoButton(): void {
+    this.tapTempoButton.classList.add("is-active");
+
+    if (this.tapTempoActiveTimeout !== null) {
+      window.clearTimeout(this.tapTempoActiveTimeout);
+    }
+
+    this.tapTempoActiveTimeout = window.setTimeout(() => {
+      this.tapTempoButton.classList.remove("is-active");
+      this.tapTempoActiveTimeout = null;
+    }, 200);
+  }
+
   private applyFontPreview(fontId: FontId): void {
     const font = getFontById(fontId);
     this.fontPreview.style.fontFamily = font.family;
+  }
+
+  private updateColorPreview(color: string): void {
+    const fallback = this.state.color;
+    const isValid = typeof color === "string" && /^#([0-9a-f]{6})$/i.test(color.trim());
+    const effective = isValid ? color.trim() : fallback;
+    const normalized = effective.toUpperCase();
+    this.colorValue.textContent = normalized;
+    this.fontPreview.style.color = effective;
   }
 
   private syncMovementSelection(movementId: MovementId): void {

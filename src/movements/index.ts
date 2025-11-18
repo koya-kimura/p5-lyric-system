@@ -5,8 +5,14 @@ import { VerticalTextDisplay } from "./entries/VerticalTextDisplay";
 import { TwoBoxMovement } from "./entries/TwoTextBoxMovement";
 import { CenterUpRotateMovement } from "./entries/CenterUpRotateMovement";
 import { NicoNicoMovement } from "./entries/NicoNicoMovement";
+import { TypeWriteMovement } from "./entries/TypeWriteMovement";
+import { PopTextMovement } from "./entries/PopTextMovement";
+import { BigBuruTextMovement } from "./entries/BigBuruTextMovement";
 
 const movementRegistry: Movement[] = [
+  new BigBuruTextMovement(),
+  new PopTextMovement(),
+  new TypeWriteMovement(),
   new NicoNicoMovement(),
   new CenterUpRotateMovement(),
   new TwoBoxMovement(),

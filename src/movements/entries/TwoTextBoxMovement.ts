@@ -1,4 +1,4 @@
-import type { Movement, MovementContext } from "../../interfaces/Movement";
+import type { Movement, MovementContext, MovementLyricPayload } from "../../interfaces/Movement";
 import { Easing } from "../../utils/easing";
 import { VertText } from "../../utils/vertText";
 
@@ -11,7 +11,7 @@ export class TwoBoxMovement implements Movement {
   private startAngle: number = (Math.random() - 0.5) * 0.35 * Math.PI;
   private targetAngle: number = (Math.random() - 0.5) * 0.35 * Math.PI;
 
-  onLyricChange(payload: { message: string; lyricIndex: number; }): void {
+  onLyricChange(payload: MovementLyricPayload): void {
     this.array.push({x: (Math.random() * 0.5 + 0.5) * this.direction, y: (Math.random() - 0.5) * 2.0, message: payload.message});
     if(this.array.length > 2) {
       this.array.shift();
@@ -22,7 +22,7 @@ export class TwoBoxMovement implements Movement {
     this.targetAngle = (Math.random() - 0.5) * 0.35 * Math.PI;
   }
 
-  draw({ p, tex, message, beatsElapsed }: MovementContext): void {
+  draw({ p, tex, message, beatsElapsed, color }: MovementContext): void {
     const beatPhase = Math.max(0, beatsElapsed);
     const clamped = Math.min(1, beatPhase);
     const scaled = Easing.easeInQuad(clamped) + (Math.max(1, beatPhase) - 1) * 0.5;
@@ -48,16 +48,21 @@ export class TwoBoxMovement implements Movement {
       const alpha = isNewestEntry ? Math.min(scaled, 1) : 1;
       const rectWidth = tex.textWidth("W") * 1.5;
       const rectHeight = tex.textWidth("W") * (entryMessage?.length ?? 0) * 1.2;
+      const strokeAlpha = Math.min(alpha * 255, 255);
+      const strokeColor = p.color(color);
+      strokeColor.setAlpha(strokeAlpha);
+      const fillColor = p.color(color);
+      fillColor.setAlpha(strokeAlpha);
 
       tex.push();
       tex.translate(x, y);
 
       tex.noFill();
-      tex.stroke(Math.min(alpha * 255, 255));
+      tex.stroke(strokeColor);
       tex.rectMode(p.CENTER);
       tex.rect(0, 0, rectWidth, rectHeight);
 
-      tex.fill(255, Math.min(alpha * 255, 255));
+      tex.fill(fillColor);
       tex.noStroke();
       VertText.vertText(p, tex, entryMessage || "", 0, 0, "CENTER");
       tex.pop();

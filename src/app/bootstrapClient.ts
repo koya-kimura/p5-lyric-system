@@ -4,6 +4,7 @@ import { loadLyricsLibrary } from "./lyricsService";
 import type { LyricsLibrary, SongLyrics } from "./lyricsService";
 import { TelemetryChannel } from "../core/telemetry";
 import { loadFontCatalog } from "../core/fontRegistry";
+import { renderUsageGuide } from "./usageGuide";
 
 export type ClientRole = "control" | "perform";
 
@@ -80,12 +81,44 @@ export const bootstrapClient = async (): Promise<AppContext> => {
 
   const title = document.createElement("h1");
   title.className = "app-header__title";
-  title.textContent = "p5 Lyric System";
 
-  header.appendChild(title);
+  const titleButton = document.createElement("button");
+  titleButton.type = "button";
+  titleButton.className = "app-header__title-button";
+  titleButton.textContent = "p5 Lyric System";
+  titleButton.setAttribute("aria-label", "制御画面に戻る");
+  title.appendChild(titleButton);
+
+  const nav = document.createElement("nav");
+  nav.className = "app-header__nav";
+
+  const controlTab = document.createElement("button");
+  controlTab.type = "button";
+  controlTab.className = "app-header__nav-button is-active";
+  controlTab.textContent = "制御画面";
+  controlTab.setAttribute("aria-current", "page");
+
+  const usageTab = document.createElement("button");
+  usageTab.type = "button";
+  usageTab.className = "app-header__nav-button";
+  usageTab.textContent = "使い方";
+
+  nav.append(controlTab, usageTab);
+  header.append(title, nav);
 
   const main = document.createElement("div");
   main.className = "app-main";
+
+  const controlHost = document.createElement("div");
+  controlHost.className = "app-main__view app-main__view--control";
+
+  const usageHost = document.createElement("div");
+  usageHost.className = "app-main__view app-main__view--usage";
+  usageHost.hidden = true;
+
+  renderUsageGuide(usageHost);
+
+  main.append(controlHost, usageHost);
 
   root.append(header, main);
 
@@ -98,7 +131,7 @@ export const bootstrapClient = async (): Promise<AppContext> => {
   }
 
   const panel = new ControlPanel({
-    root: main,
+    root: controlHost,
     store,
     performanceUrl,
     lyrics: lyricsLibrary,
@@ -107,6 +140,36 @@ export const bootstrapClient = async (): Promise<AppContext> => {
 
   const layout = panel.getContext();
   layout.canvasParent.replaceChildren();
+
+  const setView = (view: "control" | "usage") => {
+    if (view === "control") {
+      controlHost.hidden = false;
+      usageHost.hidden = true;
+      controlTab.classList.add("is-active");
+      controlTab.setAttribute("aria-current", "page");
+      usageTab.classList.remove("is-active");
+      usageTab.removeAttribute("aria-current");
+    } else {
+      controlHost.hidden = true;
+      usageHost.hidden = false;
+      usageTab.classList.add("is-active");
+      usageTab.setAttribute("aria-current", "page");
+      controlTab.classList.remove("is-active");
+      controlTab.removeAttribute("aria-current");
+    }
+  };
+
+  controlTab.addEventListener("click", () => {
+    setView("control");
+  });
+
+  usageTab.addEventListener("click", () => {
+    setView("usage");
+  });
+
+  titleButton.addEventListener("click", () => {
+    setView("control");
+  });
 
   return {
     role,

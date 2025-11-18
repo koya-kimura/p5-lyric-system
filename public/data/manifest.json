@@ -1,12 +1,28 @@
 {
   "songs": [
     {
-      "title": "テスト単語",
-      "file": "songs/word.csv"
-    },
-    {
       "title": "あつまれ! パーティーピーポー",
       "file": "songs/atsumare_party.csv"
+    },
+    {
+      "title": "iris out",
+      "file": "songs/iris_out.csv"
+    },
+    {
+      "title": "ライラック",
+      "file": "songs/lilac.csv"
+    },
+    {
+      "title": "月面着陸計画",
+      "file": "songs/moon_plan.csv"
+    },
+    {
+      "title": "prayers",
+      "file": "songs/prayers.csv"
+    },
+    {
+      "title": "ハピネス",
+      "file": "songs/happiness.csv"
     }
   ]
 }
