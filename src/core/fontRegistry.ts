@@ -29,10 +29,15 @@ const FONT_MANIFEST_PATH = "/font/manifest.json";
 
 const FALLBACK_CATALOG: readonly FontDefinition[] = Object.freeze([
   {
-    id: "systemSans",
-    label: "システム サンセリフ",
-    family: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  }
+    id: "LINESeedJP",
+    label: "LINE Seed JP",
+    family: "'LINE Seed JP'",
+    source: "/font/book/LINESeedJP_TTF_Bd.ttf",
+    descriptors: {
+      style: "normal",
+      weight: "700",
+    },
+  },
 ]);
 
 let catalog: readonly FontDefinition[] = FALLBACK_CATALOG;

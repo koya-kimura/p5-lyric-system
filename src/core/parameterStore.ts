@@ -4,10 +4,13 @@ import { getFontById, getDefaultFontId, type FontDefinition, type FontId } from 
 export type { MovementId } from "../interfaces/Movement";
 export type { FontId } from "./fontRegistry";
 
+export type DisplayMode = "lyrics" | "logo" | "blank";
+
 const DEFAULT_MESSAGE = "";
 const DEFAULT_MOVEMENT_ID: MovementId = movements[0]?.id ?? "fade";
 const DEFAULT_TEMPO_BPM = 120;
 const DEFAULT_FONT_ID: FontId = getDefaultFontId();
+const DEFAULT_DISPLAY_MODE: DisplayMode = "lyrics";
 
 type ParameterStateBase = {
   message: string;
@@ -18,6 +21,7 @@ type ParameterStateBase = {
   activeLyricIndex: number;
   tempoBpm: number;
   fontId: FontId;
+  displayMode: DisplayMode;
 };
 
 export type ParameterState = ParameterStateBase & {
@@ -50,6 +54,7 @@ export class ParameterStore {
       tempoBpm: initial?.tempoBpm ?? DEFAULT_TEMPO_BPM,
       movementId: initial?.movementId ?? DEFAULT_MOVEMENT_ID,
       fontId: initial?.fontId ?? DEFAULT_FONT_ID,
+      displayMode: initial?.displayMode ?? DEFAULT_DISPLAY_MODE,
     };
 
     this.channel = typeof window !== "undefined" && "BroadcastChannel" in window
@@ -159,6 +164,14 @@ export class ParameterStore {
     }, { broadcast: true });
   }
 
+  setDisplayMode(mode: DisplayMode): void {
+    const resolved = this.normalizeDisplayMode(mode);
+    this.applyState({
+      ...this.state,
+      displayMode: resolved,
+    }, { broadcast: true });
+  }
+
   setMovement(movementId: MovementId): void {
     this.applyState({
       ...this.state,
@@ -218,6 +231,7 @@ export class ParameterStore {
       tempoBpm: this.sanitizeTempo(state.tempoBpm),
       movementId: resolvedMovement.id,
       fontId: this.resolveFont(state.fontId).id,
+      displayMode: this.normalizeDisplayMode(state.displayMode),
     };
   }
 
@@ -244,6 +258,13 @@ export class ParameterStore {
 
   private resolveFont(fontId: FontId | undefined): FontDefinition {
     return getFontById(fontId ?? DEFAULT_FONT_ID);
+  }
+
+  private normalizeDisplayMode(candidate: DisplayMode | string | undefined): DisplayMode {
+    if (candidate === "logo" || candidate === "blank") {
+      return candidate;
+    }
+    return DEFAULT_DISPLAY_MODE;
   }
 
   private emit(): void {

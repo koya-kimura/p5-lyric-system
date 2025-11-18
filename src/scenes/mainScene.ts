@@ -1,6 +1,6 @@
 import p5 from "p5";
 import type { Scene } from "../interfaces/Scene";
-import type { ParameterStore } from "../core/parameterStore";
+import type { ParameterStore, DisplayMode } from "../core/parameterStore";
 import type { Movement } from "../interfaces/Movement";
 import { getMovementById } from "../movements";
 import { ensureFontLoaded, getFontById, getP5FontById, type FontId } from "../core/fontRegistry";
@@ -18,6 +18,9 @@ export class SampleScene implements Scene {
     private requestedFontId: FontId;
     private activeLyricIndex: number;
     private lyricChangeEvent: { message: string; lyricIndex: number } | null;
+    private activeDisplayMode: DisplayMode;
+    private logoImage: p5.Image | null = null;
+    private isLogoLoading = false;
 
     // when the current movement animation started (used to compute movement beats)
     private movementStart = Number.NEGATIVE_INFINITY;
@@ -33,6 +36,7 @@ export class SampleScene implements Scene {
         this.requestedFontId = initialState.fontId;
         this.activeLyricIndex = initialState.activeLyricIndex;
         this.lyricChangeEvent = null;
+        this.activeDisplayMode = initialState.displayMode;
 
         void ensureFontLoaded(getFontById(this.activeFontId));
 
@@ -55,6 +59,20 @@ export class SampleScene implements Scene {
                     fontId: this.requestedFontId,
                     lyricIndex: state.activeLyricIndex,
                 };
+                return;
+            }
+
+            if (this.activeDisplayMode !== state.displayMode) {
+                this.activeDisplayMode = state.displayMode;
+                if (this.activeDisplayMode === "lyrics") {
+                    this.pendingMessage = {
+                        text: state.message,
+                        bpm: nextTempoBpm,
+                        movementId: state.movementId,
+                        fontId: this.requestedFontId,
+                        lyricIndex: state.activeLyricIndex,
+                    };
+                }
                 return;
             }
 
@@ -97,12 +115,27 @@ export class SampleScene implements Scene {
         if (this.movementStart === Number.NEGATIVE_INFINITY) {
             this.movementStart = now;
         }
+
+        if (this.activeDisplayMode === "logo" && !this.logoImage && !this.isLogoLoading) {
+            this.loadLogoImage(p);
+        }
     }
 
     // draw は受け取った Graphics にシーンのビジュアルを描画する。
     draw(p: p5, tex: p5.Graphics, movement: Movement): void {
         tex.push();
         tex.clear(0, 0, 0, 0);
+
+        if (this.activeDisplayMode === "blank") {
+            tex.pop();
+            return;
+        }
+
+        if (this.activeDisplayMode === "logo") {
+            this.drawLogo(tex);
+            tex.pop();
+            return;
+        }
 
         const now = p.millis();
         // movement beats are based on movementStart and the active BPM
@@ -162,5 +195,35 @@ export class SampleScene implements Scene {
         }
 
         tex.pop();
+    }
+
+    private loadLogoImage(p: p5): void {
+        this.isLogoLoading = true;
+        p.loadImage(
+            "/image/kimura-logo.png",
+            (img) => {
+                this.logoImage = img;
+                this.isLogoLoading = false;
+            },
+            () => {
+                this.isLogoLoading = false;
+            },
+        );
+    }
+
+    private drawLogo(tex: p5.Graphics): void {
+        const image = this.logoImage;
+        if (!image) {
+            return;
+        }
+
+        const maxWidth = tex.width * 0.5;
+        const aspect = image.height / Math.max(1, image.width);
+        const targetWidth = maxWidth;
+        const targetHeight = targetWidth * aspect;
+        const x = (tex.width - targetWidth) / 2;
+        const y = (tex.height - targetHeight) / 2;
+
+        tex.image(image, x, y, targetWidth, targetHeight);
     }
 }

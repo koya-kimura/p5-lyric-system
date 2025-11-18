@@ -3,8 +3,12 @@ import { CenterScaleMovement } from "./entries/CenterScaleMovement";
 import { VerticalMovement } from "./entries/VerticalMovement";
 import { VerticalTextDisplay } from "./entries/VerticalTextDisplay";
 import { TwoBoxMovement } from "./entries/TwoTextBoxMovement";
+import { CenterUpRotateMovement } from "./entries/CenterUpRotateMovement";
+import { NicoNicoMovement } from "./entries/NicoNicoMovement";
 
 const movementRegistry: Movement[] = [
+  new NicoNicoMovement(),
+  new CenterUpRotateMovement(),
   new TwoBoxMovement(),
   new VerticalTextDisplay(),
   new VerticalMovement(),

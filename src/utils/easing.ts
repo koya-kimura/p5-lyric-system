@@ -135,4 +135,71 @@ export class Easing {
             (Math.pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2 :
             (Math.pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
     }
+
+    // --- バウンド系イージングを追加 ---
+    
+    // bounceRatioとbounceCountのデフォルト値を持つ、汎用的なバウンド関数（未使用のため削除・設定値として残す）
+    // static defaultBounceRatio: number = 7.5625;
+    // static defaultBounceCount: number = 4; // easeOutBounceの区間数に基づく
+
+    // easeOutBounce は目標に到達する前に複数回跳ね返る（標準）。
+    // (x: 0->1 の入力, 1.0 - easeInBounce(1-x) のロジック)
+    static easeOutBounce(x: number): number {
+        const n = 1 - x;
+        const d1 = 1 / 2.75;
+        const d2 = 2 / 2.75;
+        const d3 = 2.5 / 2.75;
+
+        if (n < d1) {
+            return 1 - (7.5625 * n * n);
+        } else if (n < d2) {
+            return 1 - (7.5625 * (n - 1.5 / 2.75) * (n - 1.5 / 2.75) + 0.75);
+        } else if (n < d3) {
+            return 1 - (7.5625 * (n - 2.25 / 2.75) * (n - 2.25 / 2.75) + 0.9375);
+        } else {
+            return 1 - (7.5625 * (n - 2.625 / 2.75) * (n - 2.625 / 2.75) + 0.984375);
+        }
+    }
+
+    // easeOutSlightBounce はバウンドがゆるめ（控えめな跳ね返り）。
+    // 標準の easeOutBounce の係数を調整して、跳ね返りを小さく、回数を少なくする
+    static easeOutSlightBounce(x: number): number {
+        const n = 1 - x;
+        const d1 = 1 / 2.75;
+        const d2 = 2 / 2.75;
+        
+        if (n < d1) {
+            return 1 - (4.0 * n * n); // 係数を小さくして初期の勢いを抑える
+        } else if (n < d2) {
+            return 1 - (4.0 * (n - 1.5 / 2.75) * (n - 1.5 / 2.75) + 0.9); // バウンドの深さを抑える (0.9 vs 0.75)
+        } else {
+            // 最後の区間はバウンドさせずに終端へ向かう
+            return 1 - (1.0 * (n - 2.5 / 2.75) + 0.99); // 終端に近づける
+        }
+    }
+
+    // easeOutHarshBounce はバウンドがはげしめ（大きな跳ね返り、より多くのバウンド）。
+    // 標準の easeOutBounce の係数を調整して、跳ね返りを大きく、回数を増やす
+    static easeOutHarshBounce(x: number): number {
+        const n = 1 - x;
+        const d1 = 1 / 4.0;
+        const d2 = 2 / 4.0;
+        const d3 = 3 / 4.0;
+        const d4 = 3.5 / 4.0;
+        
+        const coeff = 10.0; // 係数を大きくして初期の勢いを増す
+
+        if (n < d1) {
+            return 1 - (coeff * n * n);
+        } else if (n < d2) {
+            return 1 - (coeff * (n - 1.5 / 4.0) * (n - 1.5 / 4.0) + 0.5); // 0.5 vs 0.75
+        } else if (n < d3) {
+            return 1 - (coeff * (n - 2.5 / 4.0) * (n - 2.5 / 4.0) + 0.85); // 0.85 vs 0.9375
+        } else if (n < d4) {
+             return 1 - (coeff * (n - 3.25 / 4.0) * (n - 3.25 / 4.0) + 0.95);
+        }
+         else {
+            return 1 - (coeff * (n - 3.75 / 4.0) * (n - 3.75 / 4.0) + 0.99); // 0.99 vs 0.984375
+        }
+    }
 }

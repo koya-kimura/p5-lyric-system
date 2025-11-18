@@ -1,4 +1,4 @@
-import type { ParameterStore, ParameterState, MovementId, FontId } from "../core/parameterStore";
+import type { ParameterStore, ParameterState, MovementId, FontId, DisplayMode } from "../core/parameterStore";
 import type { LyricsLibrary } from "./lyricsService";
 import { TelemetryChannel, type TelemetryEvent } from "../core/telemetry";
 import { movements } from "../movements";
@@ -40,6 +40,7 @@ export class ControlPanel {
   private readonly tapTempoButton: HTMLButtonElement;
   private readonly fontSelect: HTMLSelectElement;
   private readonly fontPreview: HTMLElement;
+  private readonly displayModeButtons: Map<DisplayMode, HTMLButtonElement>;
   private readonly movementRadios: Map<string, HTMLInputElement>;
   private readonly unsubscribe: () => void;
   private readonly panelStates: WeakMap<HTMLElement, PanelMetrics>;
@@ -73,6 +74,7 @@ export class ControlPanel {
     this.originalCursor = "";
     this.originalUserSelect = "";
     this.tapTempoSamples = [];
+    this.displayModeButtons = new Map();
 
     this.layout = document.createElement("div");
     this.layout.className = "control-layout";
@@ -318,11 +320,9 @@ export class ControlPanel {
     const fontLabel = document.createElement("label");
     fontLabel.className = "control-fonts-label";
 
-    const fontCaption = document.createElement("span");
-    fontCaption.textContent = "選択";
-
     this.fontSelect = document.createElement("select");
     this.fontSelect.className = "control-fonts-select";
+    this.fontSelect.setAttribute("aria-label", "フォント選択");
 
     getFontCatalog().forEach((font) => {
       const option = document.createElement("option");
@@ -332,7 +332,7 @@ export class ControlPanel {
     });
     this.fontSelect.value = this.state.fontId;
 
-    fontLabel.append(fontCaption, this.fontSelect);
+    fontLabel.append(this.fontSelect);
 
     this.fontPreview = document.createElement("div");
     this.fontPreview.className = "control-fonts-preview";
@@ -344,9 +344,45 @@ export class ControlPanel {
 
     const fontPanel = this.createPanel("font", fontSection);
 
+    const displaySection = document.createElement("section");
+    displaySection.className = "control-params control-display";
+
+    const displayTitle = document.createElement("h2");
+    displayTitle.textContent = "表示モード";
+
+    const displayButtons = document.createElement("div");
+    displayButtons.className = "control-display-buttons";
+
+    const displayModes: Array<{ id: DisplayMode; label: string }> = [
+      { id: "lyrics", label: "歌詞" },
+      { id: "logo", label: "ロゴ" },
+      { id: "blank", label: "非表示" },
+    ];
+
+    displayModes.forEach(({ id, label }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "control-display-button";
+      button.textContent = label;
+      button.addEventListener("click", () => {
+        if (this.state.displayMode !== id) {
+          this.store.setDisplayMode(id);
+        }
+      });
+      if (this.state.displayMode === id) {
+        button.classList.add("is-active");
+      }
+      displayButtons.appendChild(button);
+      this.displayModeButtons.set(id, button);
+    });
+
+    displaySection.append(displayTitle, displayButtons);
+
+    const displayPanel = this.createPanel("display", displaySection);
+
     const leftColumn = document.createElement("div");
     leftColumn.className = "control-column control-column--left";
-    leftColumn.append(this.previewPanel, infoPanel);
+    leftColumn.append(this.previewPanel, infoPanel, displayPanel);
 
     const centerColumn = document.createElement("div");
     centerColumn.className = "control-column control-column--center";
@@ -807,6 +843,7 @@ export class ControlPanel {
     }
 
     this.syncMovementSelection(state.movementId);
+    this.syncDisplayModeSelection(state.displayMode);
 
     if (state.selectedSongId) {
       this.songSelect.value = state.selectedSongId;
@@ -815,6 +852,13 @@ export class ControlPanel {
     }
 
     this.renderLyricsList(state.selectedSongId);
+  }
+
+  private syncDisplayModeSelection(mode: DisplayMode): void {
+    this.displayModeButtons.forEach((button, id) => {
+      const isActive = id === mode;
+      button.classList.toggle("is-active", isActive);
+    });
   }
 
   private handleKeyDown(event: KeyboardEvent): void {

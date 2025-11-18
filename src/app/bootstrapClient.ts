@@ -80,7 +80,7 @@ export const bootstrapClient = async (): Promise<AppContext> => {
 
   const title = document.createElement("h1");
   title.className = "app-header__title";
-  title.textContent = "P5 Lyric System";
+  title.textContent = "p5 Lyric System";
 
   header.appendChild(title);
 
