@@ -18,6 +18,10 @@ export class VerticalTextDisplay implements Movement {
     tex.translate(tex.width - Math.min(tex.width, tex.height) * 0.1, Math.min(tex.width, tex.height) * 0.1);
 
     tex.textSize(maxSize);
+    tex.fill(0, Math.min(scaled * 150, 150));
+    tex.noStroke();
+    VertText.vertText(p, tex, safeMessage, Math.min(tex.width, tex.height) * 0.002, Math.min(tex.width, tex.height) * 0.002);
+
     tex.fill(255, Math.min(scaled * 255, 255));
     tex.noStroke();
     VertText.vertText(p, tex, safeMessage, 0, 0);

@@ -11,6 +11,10 @@ export class BigBuruTextMovement implements Movement {
     // const clamped = Math.min(1, beatPhase);
     const maxSize = Math.min((tex.width / safeMessage.length), tex.height / 3) * 1.2;
 
+    if(safeMessage.length === 0) {
+      return;
+    }
+
     tex.push();
     tex.background(255, 240);
     tex.textAlign(p.CENTER, p.CENTER);

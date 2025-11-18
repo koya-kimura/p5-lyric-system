@@ -111,10 +111,12 @@ export class ControlPanel {
       if (!url) {
         return;
       }
-      const opened = window.open(url, "_blank", "noopener,noreferrer");
-      if (!opened) {
-        window.alert("ポップアップがブロックされました。ブラウザの設定で許可してください。");
+      const opened = window.open(url, "_blank");
+      if (opened) {
+        opened.opener = null;
+        return;
       }
+      window.alert("ポップアップがブロックされました。ブラウザの設定で許可してください。");
     });
 
     const copyButton = document.createElement("button");
@@ -1101,15 +1103,15 @@ export class ControlPanel {
     const activeElement = document.activeElement as HTMLElement | null;
     const isTyping = Boolean(activeElement && (activeElement.tagName === "TEXTAREA" || activeElement.tagName === "INPUT"));
 
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
+
     if (event.key === "Enter") {
       if (!isTyping) {
         event.preventDefault();
         this.advanceLyric();
       }
-      return;
-    }
-
-    if (event.metaKey || event.ctrlKey || event.altKey) {
       return;
     }
 
