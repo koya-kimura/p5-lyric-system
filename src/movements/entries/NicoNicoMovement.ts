@@ -10,12 +10,12 @@ export class NicoNicoMovement implements Movement {
     this.niconicoArray.push(new NicoNicoText(payload.message, payload.color));
   }
 
-  draw({ p, tex, message, beatsElapsed }: MovementContext): void {
-    for(let i = this.niconicoArray.length -1; i >= 0; i--){
+  draw({ p, tex }: MovementContext): void {
+    for (let i = this.niconicoArray.length - 1; i >= 0; i--) {
       const nico = this.niconicoArray[i];
       nico.update();
       nico.draw(p, tex);
-      if(nico.isDead(tex)){
+      if (nico.isDead(tex)) {
         this.niconicoArray.splice(i, 1);
       }
     }
@@ -37,11 +37,11 @@ class NicoNicoText {
     this.color = color;
   }
 
-  update(){
+  update() {
     this.x -= this.vx;
   }
 
-  draw(p: p5, tex: p5.Graphics){
+  draw(p: p5, tex: p5.Graphics) {
     const x = this.x * tex.width;
     const y = this.y * tex.height;
     const s = Math.min(tex.width, tex.height) * 0.1;

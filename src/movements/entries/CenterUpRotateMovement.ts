@@ -10,8 +10,7 @@ export class CenterUpRotateMovement implements Movement {
     const beatPhase = Math.max(0, beatsElapsed);
     const clamped = Math.min(1, beatPhase);
     const maxSize = tex.width / Math.max((message.length * 1.5), 10);
-    const positionY = (tex.height * 0.5 + maxSize * 2.0)-Easing.easeInQuad(clamped) * (tex.height * 0.5 + maxSize * 2.0);
-    const angle = p.map(Easing.easeOutBounce(clamped), 0, 1, p.PI, 0);
+    const positionY = (tex.height * 0.5 + maxSize * 2.0) - Easing.easeInQuad(clamped) * (tex.height * 0.5 + maxSize * 2.0);
     const sclX = 0.2 + 0.8 * Easing.easeOutHarshBounce(clamped);
     const sclY = 0.2 + 0.8 * Easing.easeOutSlightBounce(clamped);
 
@@ -20,7 +19,7 @@ export class CenterUpRotateMovement implements Movement {
     tex.translate(0, positionY);
     tex.textAlign(p.CENTER, p.CENTER);
     tex.textSize(maxSize);
-    for(let i = 0; i < safeMessage.length; i++){
+    for (let i = 0; i < safeMessage.length; i++) {
       const x = (i - (safeMessage.length - 1) / 2) * maxSize * 1.1;
 
       tex.push();

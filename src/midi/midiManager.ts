@@ -34,7 +34,7 @@ export class MIDIManager {
         }
 
         try {
-            const midiAccess = await navigator.requestMIDIAccess();
+            const midiAccess = await navigator.requestMIDIAccess() as MIDIAccess;
             this.onMIDISuccess(midiAccess);
         } catch (error) {
             this.onMIDIFailure(error);

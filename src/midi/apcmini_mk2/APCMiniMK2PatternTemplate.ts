@@ -51,7 +51,7 @@ export abstract class APCMiniMK2Base extends MIDIManager {
     }
 
     // handleMIDIMessage は派生クラスが実装すべき必須コールバック。
-    protected abstract handleMIDIMessage(message: WebMidi.MIDIMessageEvent): void;
+    protected abstract handleMIDIMessage(message: MIDIMessageEvent): void;
 
     // isGridPad はノート番号がメイングリッドかを判定する。
     protected isGridPad(note: number): boolean {
@@ -153,7 +153,7 @@ export class APCMiniMK2PatternTemplate extends APCMiniMK2Base {
     }
 
     // handleMIDIMessage はテンプレートとして空実装を提供する。
-    protected handleMIDIMessage(_message: WebMidi.MIDIMessageEvent): void {
+    protected handleMIDIMessage(_message: MIDIMessageEvent): void {
         // TODO: MIDI入力に応じた処理を実装してください。
     }
 }
