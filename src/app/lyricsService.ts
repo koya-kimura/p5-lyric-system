@@ -8,6 +8,8 @@ export type SongLyrics = {
   id: string;
   title: string;
   lines: LyricLine[];
+  defaultFontId?: string;
+  defaultMovementId?: string;
 };
 
 export type LyricsLibrary = {
@@ -19,6 +21,8 @@ type LyricsManifest = {
   songs: Array<{
     title?: string;
     file: string;
+    defaultFontId?: string;
+    defaultMovementId?: string;
   }>;
 };
 
@@ -144,7 +148,7 @@ const buildSongTitle = (entry: { title?: string; file: string }): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-const loadSongFromEntry = async (entry: { title?: string; file: string }, index: number): Promise<SongLyrics | null> => {
+const loadSongFromEntry = async (entry: { title?: string; file: string; defaultFontId?: string; defaultMovementId?: string }, index: number): Promise<SongLyrics | null> => {
   const fileUrl = resolveDataUrl(entry.file);
   const response = await fetch(fileUrl, { cache: "no-store" });
   if (!response.ok) {
@@ -159,12 +163,22 @@ const loadSongFromEntry = async (entry: { title?: string; file: string }, index:
     return null;
   }
 
-  return {
+  const song: SongLyrics = {
     id: buildSongId(entry, index),
     title: buildSongTitle(entry),
     lines,
-  } satisfies SongLyrics;
+  };
+
+  if (entry.defaultFontId) {
+    song.defaultFontId = entry.defaultFontId;
+  }
+  if (entry.defaultMovementId) {
+    song.defaultMovementId = entry.defaultMovementId;
+  }
+
+  return song;
 };
+
 
 export const loadLyricsLibrary = async (): Promise<LyricsLibrary> => {
   const manifestResponse = await fetch(MANIFEST_SOURCE, { cache: "no-store" });

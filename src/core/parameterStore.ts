@@ -13,6 +13,14 @@ const DEFAULT_FONT_ID: FontId = getDefaultFontId();
 const DEFAULT_DISPLAY_MODE: DisplayMode = "lyrics";
 const DEFAULT_COLOR = "#38BDF8";
 
+export const DEFAULT_FONT_VALUE = "__default__" as const;
+export const DEFAULT_MOVEMENT_VALUE = "__default__" as const;
+
+export type SongDefaults = {
+  fontId?: string;
+  movementId?: string;
+};
+
 type ParameterStateBase = {
   message: string;
   messageVersion: number;
@@ -24,6 +32,8 @@ type ParameterStateBase = {
   fontId: FontId;
   displayMode: DisplayMode;
   color: string;
+  useDefaultFont: boolean;
+  useDefaultMovement: boolean;
 };
 
 export type ParameterState = ParameterStateBase & {
@@ -44,6 +54,7 @@ export class ParameterStore {
   private state: ParameterState;
   private readonly listeners = new Set<Listener>();
   private readonly channel: BroadcastChannel | null;
+  private readonly songDefaults = new Map<string, SongDefaults>();
 
   constructor(initial?: Partial<ParameterState>) {
     this.state = {
@@ -58,6 +69,8 @@ export class ParameterStore {
       fontId: initial?.fontId ?? DEFAULT_FONT_ID,
       displayMode: initial?.displayMode ?? DEFAULT_DISPLAY_MODE,
       color: this.sanitizeColor(initial?.color),
+      useDefaultFont: initial?.useDefaultFont ?? true,
+      useDefaultMovement: initial?.useDefaultMovement ?? true,
     };
 
     this.channel = typeof window !== "undefined" && "BroadcastChannel" in window
@@ -142,15 +155,30 @@ export class ParameterStore {
 
   showLyric(payload: { songId: string; index: number; text: string }): void {
     const nextVersion = this.state.messageVersion + 1;
-    this.applyState({
+    const songDefaults = this.songDefaults.get(payload.songId);
+
+    const nextState = {
       ...this.state,
       selectedSongId: payload.songId,
       activeLyricIndex: payload.index,
       message: payload.text,
       messageVersion: nextVersion,
       manualOverrideVersion: null,
-    }, { broadcast: true });
+    } as ParameterState;
+
+    // Apply song defaults if useDefault flags are set
+    if (this.state.useDefaultFont && songDefaults?.fontId) {
+      const resolved = this.resolveFont(songDefaults.fontId);
+      nextState.fontId = resolved.id;
+    }
+    if (this.state.useDefaultMovement && songDefaults?.movementId) {
+      const resolved = getMovementById(songDefaults.movementId);
+      nextState.movementId = resolved.id;
+    }
+
+    this.applyState(nextState, { broadcast: true });
   }
+
 
   setTempoBpm(bpm: number): void {
     this.applyState({
@@ -164,6 +192,7 @@ export class ParameterStore {
     this.applyState({
       ...this.state,
       fontId: resolved.id,
+      useDefaultFont: false,
     }, { broadcast: true });
   }
 
@@ -186,6 +215,29 @@ export class ParameterStore {
     this.applyState({
       ...this.state,
       movementId,
+      useDefaultMovement: false,
+    }, { broadcast: true });
+  }
+
+  setSongDefaults(songId: string, defaults: SongDefaults): void {
+    this.songDefaults.set(songId, defaults);
+  }
+
+  getSongDefaults(songId: string): SongDefaults | undefined {
+    return this.songDefaults.get(songId);
+  }
+
+  setUseDefaultFont(useDefault: boolean): void {
+    this.applyState({
+      ...this.state,
+      useDefaultFont: useDefault,
+    }, { broadcast: true });
+  }
+
+  setUseDefaultMovement(useDefault: boolean): void {
+    this.applyState({
+      ...this.state,
+      useDefaultMovement: useDefault,
     }, { broadcast: true });
   }
 
@@ -243,6 +295,8 @@ export class ParameterStore {
       fontId: this.resolveFont(state.fontId).id,
       displayMode: this.normalizeDisplayMode(state.displayMode),
       color: this.sanitizeColor(state.color),
+      useDefaultFont: state.useDefaultFont ?? true,
+      useDefaultMovement: state.useDefaultMovement ?? true,
     };
   }
 

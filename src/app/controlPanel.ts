@@ -1,4 +1,5 @@
 import type { ParameterStore, ParameterState, MovementId, FontId, DisplayMode } from "../core/parameterStore";
+import { DEFAULT_FONT_VALUE, DEFAULT_MOVEMENT_VALUE } from "../core/parameterStore";
 import type { LyricsLibrary } from "./lyricsService";
 import { TelemetryChannel, type TelemetryEvent } from "../core/telemetry";
 import { movements } from "../movements";
@@ -41,8 +42,7 @@ export class ControlPanel {
   private tapTempoActiveTimeout: number | null;
   private readonly fontSelect: HTMLSelectElement;
   private readonly fontPreview: HTMLElement;
-  private readonly colorInput: HTMLInputElement;
-  private readonly colorValue: HTMLSpanElement;
+
   private readonly displayModeButtons: Map<DisplayMode, HTMLButtonElement>;
   private readonly movementRadios: Map<string, HTMLInputElement>;
   private readonly unsubscribe: () => void;
@@ -254,6 +254,35 @@ export class ControlPanel {
     const movementList = document.createElement("div");
     movementList.className = "control-movements-list";
 
+    // Add default option first
+    const defaultMovementItem = document.createElement("label");
+    defaultMovementItem.className = "control-movements-item";
+    if (this.state.useDefaultMovement) {
+      defaultMovementItem.classList.add("is-active");
+    }
+
+    const defaultMovementInput = document.createElement("input");
+    defaultMovementInput.type = "radio";
+    defaultMovementInput.name = "control-movement";
+    defaultMovementInput.value = DEFAULT_MOVEMENT_VALUE;
+    defaultMovementInput.title = "デフォルト";
+    defaultMovementInput.checked = this.state.useDefaultMovement;
+
+    defaultMovementInput.addEventListener("change", () => {
+      if (defaultMovementInput.checked) {
+        this.store.setUseDefaultMovement(true);
+        this.syncMovementSelection(DEFAULT_MOVEMENT_VALUE);
+      }
+    });
+
+    const defaultMovementLabel = document.createElement("span");
+    defaultMovementLabel.className = "control-movements-label";
+    defaultMovementLabel.textContent = "デフォルト";
+
+    defaultMovementItem.append(defaultMovementInput, defaultMovementLabel);
+    movementList.appendChild(defaultMovementItem);
+    this.movementRadios.set(DEFAULT_MOVEMENT_VALUE, defaultMovementInput);
+
     movements.forEach((movement) => {
       const item = document.createElement("label");
       item.className = "control-movements-item";
@@ -263,7 +292,7 @@ export class ControlPanel {
       input.name = "control-movement";
       input.value = movement.id;
       input.title = movement.label;
-      if (movement.id === this.state.movementId) {
+      if (!this.state.useDefaultMovement && movement.id === this.state.movementId) {
         input.checked = true;
         item.classList.add("is-active");
       }
@@ -285,9 +314,10 @@ export class ControlPanel {
       this.movementRadios.set(movement.id, input);
     });
 
-    this.syncMovementSelection(this.state.movementId);
+    this.syncMovementSelection(this.state.useDefaultMovement ? DEFAULT_MOVEMENT_VALUE : this.state.movementId);
 
     movementSection.append(movementTitle, movementList);
+
 
     const movementPanel = this.createPanel("movement", movementSection);
 
@@ -348,13 +378,19 @@ export class ControlPanel {
     this.fontSelect.className = "control-fonts-select";
     this.fontSelect.setAttribute("aria-label", "フォント選択");
 
+    // Add default option first
+    const defaultFontOption = document.createElement("option");
+    defaultFontOption.value = DEFAULT_FONT_VALUE;
+    defaultFontOption.textContent = "デフォルト";
+    this.fontSelect.appendChild(defaultFontOption);
+
     getFontCatalog().forEach((font) => {
       const option = document.createElement("option");
       option.value = font.id;
       option.textContent = font.label;
       this.fontSelect.appendChild(option);
     });
-    this.fontSelect.value = this.state.fontId;
+    this.fontSelect.value = this.state.useDefaultFont ? DEFAULT_FONT_VALUE : this.state.fontId;
 
     fontLabel.append(this.fontSelect);
 
@@ -364,30 +400,9 @@ export class ControlPanel {
     this.applyFontPreview(this.state.fontId);
     void ensureFontLoaded(getFontById(this.state.fontId));
 
-    const colorField = document.createElement("label");
-    colorField.className = "control-color-field";
 
-    const colorCaption = document.createElement("span");
-    colorCaption.className = "control-color-caption";
-    colorCaption.textContent = "カラー";
+    fontSection.append(fontTitle, fontLabel, this.fontPreview);
 
-    this.colorInput = document.createElement("input");
-    this.colorInput.type = "color";
-    this.colorInput.className = "control-color-picker";
-    this.colorInput.value = this.state.color.toLowerCase();
-    this.colorInput.setAttribute("aria-label", "カラー選択");
-
-    this.colorValue = document.createElement("span");
-    this.colorValue.className = "control-color-value";
-    this.colorValue.textContent = this.state.color.toUpperCase();
-    this.colorValue.setAttribute("role", "status");
-    this.colorValue.setAttribute("aria-live", "polite");
-
-    colorField.append(colorCaption, this.colorInput, this.colorValue);
-
-    this.updateColorPreview(this.state.color);
-
-    fontSection.append(fontTitle, fontLabel, this.fontPreview, colorField);
 
     const fontPanel = this.createPanel("font", fontSection);
 
@@ -469,18 +484,18 @@ export class ControlPanel {
     });
 
     this.fontSelect.addEventListener("change", () => {
-      const fontId = this.fontSelect.value as FontId;
-      const font = getFontById(fontId);
-      this.applyFontPreview(fontId);
-      void ensureFontLoaded(font);
-      this.store.setFont(fontId);
+      const selectedValue = this.fontSelect.value;
+      if (selectedValue === DEFAULT_FONT_VALUE) {
+        this.store.setUseDefaultFont(true);
+      } else {
+        const fontId = selectedValue as FontId;
+        const font = getFontById(fontId);
+        this.applyFontPreview(fontId);
+        void ensureFontLoaded(font);
+        this.store.setFont(fontId);
+      }
     });
 
-    this.colorInput.addEventListener("input", () => {
-      const value = this.colorInput.value;
-      this.updateColorPreview(value);
-      this.store.setColor(value);
-    });
 
     this.tapTempoButton.addEventListener("click", () => {
       this.handleTapTempo();
@@ -1065,22 +1080,18 @@ export class ControlPanel {
       }
     }
 
-    if (this.fontSelect.value !== state.fontId) {
-      this.fontSelect.value = state.fontId;
-      this.applyFontPreview(state.fontId);
-      void ensureFontLoaded(getFontById(state.fontId));
+    const expectedFontValue = state.useDefaultFont ? DEFAULT_FONT_VALUE : state.fontId;
+    if (this.fontSelect.value !== expectedFontValue) {
+      this.fontSelect.value = expectedFontValue;
+      if (!state.useDefaultFont) {
+        this.applyFontPreview(state.fontId);
+        void ensureFontLoaded(getFontById(state.fontId));
+      }
     }
 
-    const normalizedStateColor = state.color.toUpperCase();
-    const inputColorValue = state.color.toLowerCase();
-    if (this.colorInput.value.toLowerCase() !== inputColorValue) {
-      this.colorInput.value = inputColorValue;
-    }
-    if (this.colorValue.textContent !== normalizedStateColor) {
-      this.updateColorPreview(state.color);
-    }
 
-    this.syncMovementSelection(state.movementId);
+    const expectedMovementValue = state.useDefaultMovement ? DEFAULT_MOVEMENT_VALUE : state.movementId;
+    this.syncMovementSelection(expectedMovementValue);
     this.syncDisplayModeSelection(state.displayMode);
 
     if (state.selectedSongId) {
@@ -1232,15 +1243,6 @@ export class ControlPanel {
   private applyFontPreview(fontId: FontId): void {
     const font = getFontById(fontId);
     this.fontPreview.style.fontFamily = font.family;
-  }
-
-  private updateColorPreview(color: string): void {
-    const fallback = this.state.color;
-    const isValid = typeof color === "string" && /^#([0-9a-f]{6})$/i.test(color.trim());
-    const effective = isValid ? color.trim() : fallback;
-    const normalized = effective.toUpperCase();
-    this.colorValue.textContent = normalized;
-    this.fontPreview.style.color = effective;
   }
 
   private syncMovementSelection(movementId: MovementId): void {

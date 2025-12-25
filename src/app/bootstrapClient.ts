@@ -130,6 +130,17 @@ export const bootstrapClient = async (): Promise<AppContext> => {
     lyricsLibrary = createEmptyLibrary();
   }
 
+  // Register song default settings with the store
+  lyricsLibrary.songs.forEach((song) => {
+    if (song.defaultFontId || song.defaultMovementId) {
+      store.setSongDefaults(song.id, {
+        fontId: song.defaultFontId,
+        movementId: song.defaultMovementId,
+      });
+    }
+  });
+
+
   const panel = new ControlPanel({
     root: controlHost,
     store,

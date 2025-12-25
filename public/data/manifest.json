@@ -2,27 +2,39 @@
   "songs": [
     {
       "title": "あつまれ! パーティーピーポー",
-      "file": "songs/atsumare_party.csv"
+      "file": "songs/atsumare_party.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     },
     {
       "title": "iris out",
-      "file": "songs/iris_out.csv"
+      "file": "songs/iris_out.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     },
     {
       "title": "ライラック",
-      "file": "songs/lilac.csv"
+      "file": "songs/lilac.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     },
     {
       "title": "月面着陸計画",
-      "file": "songs/moon_plan.csv"
+      "file": "songs/moon_plan.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     },
     {
       "title": "prayers",
-      "file": "songs/prayers.csv"
+      "file": "songs/prayers.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     },
     {
       "title": "ハピネス",
-      "file": "songs/happiness.csv"
+      "file": "songs/happiness.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     }
   ]
 }

@@ -8,8 +8,10 @@ import { NicoNicoMovement } from "./entries/NicoNicoMovement";
 import { TypeWriteMovement } from "./entries/TypeWriteMovement";
 import { PopTextMovement } from "./entries/PopTextMovement";
 import { BigBuruTextMovement } from "./entries/BigBuruTextMovement";
+import { CenterTopMovement } from "./entries/CenterTopMovement";
 
 const movementRegistry: Movement[] = [
+  new CenterTopMovement(),
   new BigBuruTextMovement(),
   new PopTextMovement(),
   new TypeWriteMovement(),
@@ -29,5 +31,5 @@ export const movements: readonly Movement[] = movementRegistry;
 
 export const getMovementById = (id: string): Movement =>
   movementRegistry.find((movement) => movement.id === id)
-    ?? movementAliases[id]
-    ?? movementRegistry[0];
+  ?? movementAliases[id]
+  ?? movementRegistry[0];
