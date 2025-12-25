@@ -418,6 +418,7 @@ export class ControlPanel {
     const displayModes: Array<{ id: DisplayMode; label: string }> = [
       { id: "lyrics", label: "歌詞" },
       { id: "logo", label: "ロゴ" },
+      { id: "logo2", label: "QR" },
       { id: "blank", label: "非表示" },
     ];
 
@@ -1035,6 +1036,8 @@ export class ControlPanel {
       case "x":
         return "logo";
       case "c":
+        return "logo2";
+      case "v":
         return "blank";
       default:
         return null;

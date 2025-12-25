@@ -35,6 +35,12 @@
       "file": "songs/happiness.csv",
       "defaultFontId": "LINESeedJP",
       "defaultMovementId": "centerTop"
+    },
+    {
+      "title": "世界を変えてさせておくれよ",
+      "file": "songs/sekai.csv",
+      "defaultFontId": "LINESeedJP",
+      "defaultMovementId": "centerTop"
     }
   ]
 }

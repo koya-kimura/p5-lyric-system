@@ -4,7 +4,7 @@ import { getFontById, getDefaultFontId, type FontDefinition, type FontId } from 
 export type { MovementId } from "../interfaces/Movement";
 export type { FontId } from "./fontRegistry";
 
-export type DisplayMode = "lyrics" | "logo" | "blank";
+export type DisplayMode = "lyrics" | "logo" | "logo2" | "blank";
 
 const DEFAULT_MESSAGE = "";
 const DEFAULT_MOVEMENT_ID: MovementId = movements[0]?.id ?? "fade";
@@ -342,7 +342,7 @@ export class ParameterStore {
   }
 
   private normalizeDisplayMode(candidate: DisplayMode | string | undefined): DisplayMode {
-    if (candidate === "logo" || candidate === "blank") {
+    if (candidate === "logo" || candidate === "logo2" || candidate === "blank") {
       return candidate;
     }
     return DEFAULT_DISPLAY_MODE;

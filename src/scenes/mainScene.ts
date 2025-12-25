@@ -22,6 +22,8 @@ export class SampleScene implements Scene {
     private activeDisplayMode: DisplayMode;
     private logoImage: p5.Image | null = null;
     private isLogoLoading = false;
+    private logo2Image: p5.Image | null = null;
+    private isLogo2Loading = false;
 
     // when the current movement animation started (used to compute movement beats)
     private movementStart = Number.NEGATIVE_INFINITY;
@@ -134,6 +136,10 @@ export class SampleScene implements Scene {
         if (this.activeDisplayMode === "logo" && !this.logoImage && !this.isLogoLoading) {
             this.loadLogoImage(p);
         }
+
+        if (this.activeDisplayMode === "logo2" && !this.logo2Image && !this.isLogo2Loading) {
+            this.loadLogo2Image(p);
+        }
     }
 
     // draw は受け取った Graphics にシーンのビジュアルを描画する。
@@ -148,6 +154,12 @@ export class SampleScene implements Scene {
 
         if (this.activeDisplayMode === "logo") {
             this.drawLogo(tex);
+            tex.pop();
+            return;
+        }
+
+        if (this.activeDisplayMode === "logo2") {
+            this.drawLogo2(tex);
             tex.pop();
             return;
         }
@@ -236,6 +248,36 @@ export class SampleScene implements Scene {
 
     private drawLogo(tex: p5.Graphics): void {
         const image = this.logoImage;
+        if (!image) {
+            return;
+        }
+
+        const maxWidth = tex.width * 0.5;
+        const aspect = image.height / Math.max(1, image.width);
+        const targetWidth = maxWidth;
+        const targetHeight = targetWidth * aspect;
+        const x = (tex.width - targetWidth) / 2;
+        const y = (tex.height - targetHeight) / 2;
+
+        tex.image(image, x, y, targetWidth, targetHeight);
+    }
+
+    private loadLogo2Image(p: p5): void {
+        this.isLogo2Loading = true;
+        p.loadImage(
+            "/image/nazo-qr.png",
+            (img) => {
+                this.logo2Image = img;
+                this.isLogo2Loading = false;
+            },
+            () => {
+                this.isLogo2Loading = false;
+            },
+        );
+    }
+
+    private drawLogo2(tex: p5.Graphics): void {
+        const image = this.logo2Image;
         if (!image) {
             return;
         }
