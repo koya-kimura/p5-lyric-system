@@ -223,7 +223,7 @@ export class SampleScene implements Scene {
     private loadLogoImage(p: p5): void {
         this.isLogoLoading = true;
         p.loadImage(
-            "/image/kimura-logo.png",
+            "/image/LiR-logo.png",
             (img) => {
                 this.logoImage = img;
                 this.isLogoLoading = false;
